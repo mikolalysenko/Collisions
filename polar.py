@@ -26,16 +26,16 @@ def rect2polar( f, R ):
 	#Perform Bresenham interpolation
 	for r in range(2, R):
 		#Allocate result
-		res = zeros((8 * r + 4), f.dtype)
+		res = zeros((8 * (r-1) + 4), f.dtype)
+		p = 2 * (r-1)
 
 		#Handle axial directions
-		res[0+0*r] = f[x0,   y0+r]
-		res[1+2*r] = f[x0+r, y0]
-		res[2+4*r] = f[x0,   y0-r]
-		res[3+6*r] = f[x0-r, y0]
+		res[0    ] = f[x0,   y0+r]
+		res[1+  p] = f[x0+r, y0]
+		res[2+2*p] = f[x0,   y0-r]
+		res[3+3*p] = f[x0-r, y0]
 		
 		print "R=", r;
-		
 
 		#Set up scan conversion process
 		x = 0
@@ -45,26 +45,26 @@ def rect2polar( f, R ):
 
 		theta = [atan2(y,x)];
 
-		while x < y:
+		while t < r:
 			#Handle x-crossing
 			x = x + 1
 			
 			theta.append( atan2(y, x) );
 	
 			res[    t+0] = f[x0+x,y0+y]
-			res[2*r-t+1] = f[x0+y,y0+x]
-			res[2*r+t+1] = f[x0+y,y0-x]
-			res[4*r-t+2] = f[x0+x,y0-y]
-			res[4*r+t+2] = f[x0-x,y0-y]
-			res[6*r-t+3] = f[x0-y,y0-x]
-			res[6*r+t+3] = f[x0-y,y0+x]
-			res[8*r-t+4] = f[x0-x,y0+y]
+			res[  p-t+1] = f[x0+y,y0+x]
+			res[  p+t+1] = f[x0+y,y0-x]
+			res[2*p-t+2] = f[x0+x,y0-y]
+			res[2*p+t+2] = f[x0-x,y0-y]
+			res[3*p-t+3] = f[x0-y,y0-x]
+			res[3*p+t+3] = f[x0-y,y0+x]
+			res[4*p-t+4] = f[x0-x,y0+y]
 			t = t + 1
 	
 			#Update status flag
 			if  s < 0:
 				s = s + 2 * x + 1
-			elif x < y:
+			elif t < r:
 				#Also handle y-crossing
 				y = y - 1
 				s = s + 2 * (x - y) + 1
@@ -72,19 +72,19 @@ def rect2polar( f, R ):
 				theta.append( atan2(y, x) );
 	
 				res[    t+0] = f[x0+x,y0+y]
-				res[2*r-t+1] = f[x0+y,y0+x]
-				res[2*r+t+1] = f[x0+y,y0-x]
-				res[4*r-t+2] = f[x0+x,y0-y]
-				res[4*r+t+2] = f[x0-x,y0-y]
-				res[6*r-t+3] = f[x0-y,y0-x]
-				res[6*r+t+3] = f[x0-y,y0+x]
-				res[8*r-t+4] = f[x0-x,y0+y]
+				res[  p-t+1] = f[x0+y,y0+x]
+				res[  p+t+1] = f[x0+y,y0-x]
+				res[2*p-t+2] = f[x0+x,y0-y]
+				res[2*p+t+2] = f[x0-x,y0-y]
+				res[3*p-t+3] = f[x0-y,y0-x]
+				res[3*p+t+3] = f[x0-y,y0+x]
+				res[4*p-t+4] = f[x0-x,y0+y]
 				t = t + 1
 				
 		print "t=", t;
 		print "THETA=\n";
 		for k in range(len(theta)):
-			print "K =",k,", THETA =", (theta[k]/pi), "";
+			print "K =",k,", THETA =", (theta[k]/pi), ", RES = ", res[k];
 		fp.append(res)
         
 	return fp
@@ -127,12 +127,13 @@ def polar2rect( fp, xs, ys ):
 	for r in range(2, R):
 		#Read circle values
 		res = fp[r]
+		p = 2 * (r-1)
 		
 		#Set axial values
-		f[x0,y0+r] = res[0+0*r]
-		f[x0+r,y0] = res[1+2*r]
-		f[x0,y0-r] = res[2+4*r]
-		f[x0-r,y0] = res[3+6*r]
+		f[x0,y0+r] = res[0    ]
+		f[x0+r,y0] = res[1+  p]
+		f[x0,y0-r] = res[2+2*p]
+		f[x0-r,y0] = res[3+3*p]
 		
 		#Begin Bresenham interpolation
 		x = 0
@@ -140,34 +141,34 @@ def polar2rect( fp, xs, ys ):
 		s = 1 - r
 		t = 1
 
-		while x <= y:
+		while t < r:
 			#Handle x-crossing
 			x = x + 1
 			
 			f[x0+x,y0+y] = res[    t+0]
-			f[x0+y,y0+x] = res[2*r-t+1]
-			f[x0+y,y0-x] = res[2*r+t+1]
-			f[x0+x,y0-y] = res[4*r-t+2]
-			f[x0-x,y0-y] = res[4*r+t+2]
-			f[x0-y,y0-x] = res[6*r-t+3]
-			f[x0-y,y0+x] = res[6*r+t+3]
-			f[x0-x,y0+y] = res[8*r-t+4]
+			f[x0+y,y0+x] = res[  p-t+1]
+			f[x0+y,y0-x] = res[  p+t+1]
+			f[x0+x,y0-y] = res[2*p-t+2]
+			f[x0-x,y0-y] = res[2*p+t+2]
+			f[x0-y,y0-x] = res[3*p-t+3]
+			f[x0-y,y0+x] = res[3*p+t+3]
+			f[x0-x,y0+y] = res[4*p-t+4]
 			t = t + 1
 			
 			if s < 0:
 				s = s + 2 * x + 1
-			elif x <= y:
+			elif t < r:
 				#Also handle y-crossing
 				y = y - 1
 				s = s + 2 * (x - y) + 1
 				f[x0+x,y0+y] = res[    t+0]
-				f[x0+y,y0+x] = res[2*r-t+1]
-				f[x0+y,y0-x] = res[2*r+t+1]
-				f[x0+x,y0-y] = res[4*r-t+2]
-				f[x0-x,y0-y] = res[4*r+t+2]
-				f[x0-y,y0-x] = res[6*r-t+3]
-				f[x0-y,y0+x] = res[6*r+t+3]
-				f[x0-x,y0+y] = res[8*r-t+4]
+				f[x0+y,y0+x] = res[  p-t+1]
+				f[x0+y,y0-x] = res[  p+t+1]
+				f[x0+x,y0-y] = res[2*p-t+2]
+				f[x0-x,y0-y] = res[2*p+t+2]
+				f[x0-y,y0-x] = res[3*p-t+3]
+				f[x0-y,y0+x] = res[3*p+t+3]
+				f[x0-x,y0+y] = res[4*p-t+4]
 				t = t + 1
 	return f
 	
