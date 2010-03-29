@@ -1,3 +1,4 @@
+from math import atan2;
 from scipy import *
 
 '''
@@ -16,7 +17,7 @@ def rect2polar( f, R ):
 	fp = []
 	
 	#Initialize 0,1 as special cases
-	fp.append(array([ f[x0, y0] ], f.dtype))
+	fp.append(array([ f[x0, y0] ]))
 	
 	if R >= 1:
 		fp.append(array(
@@ -32,6 +33,9 @@ def rect2polar( f, R ):
 		res[1+2*r] = f[x0+r, y0]
 		res[2+4*r] = f[x0,   y0-r]
 		res[3+6*r] = f[x0-r, y0]
+		
+		print "R=", r;
+		
 
 		#Set up scan conversion process
 		x = 0
@@ -39,9 +43,13 @@ def rect2polar( f, R ):
 		s = 1 - r
 		t = 1
 
-		while x <= y:
+		theta = [atan2(y,x)];
+
+		while x < y:
 			#Handle x-crossing
 			x = x + 1
+			
+			theta.append( atan2(y, x) );
 	
 			res[    t+0] = f[x0+x,y0+y]
 			res[2*r-t+1] = f[x0+y,y0+x]
@@ -56,10 +64,12 @@ def rect2polar( f, R ):
 			#Update status flag
 			if  s < 0:
 				s = s + 2 * x + 1
-			elif x <= y:
+			elif x < y:
 				#Also handle y-crossing
 				y = y - 1
 				s = s + 2 * (x - y) + 1
+				
+				theta.append( atan2(y, x) );
 	
 				res[    t+0] = f[x0+x,y0+y]
 				res[2*r-t+1] = f[x0+y,y0+x]
@@ -70,6 +80,11 @@ def rect2polar( f, R ):
 				res[6*r+t+3] = f[x0-y,y0+x]
 				res[8*r-t+4] = f[x0-x,y0+y]
 				t = t + 1
+				
+		print "t=", t;
+		print "THETA=\n";
+		for k in range(len(theta)):
+			print "K =",k,", THETA =", (theta[k]/pi), "";
 		fp.append(res)
         
 	return fp
@@ -155,3 +170,9 @@ def polar2rect( fp, xs, ys ):
 				f[x0-x,y0+y] = res[8*r-t+4]
 				t = t + 1
 	return f
+	
+'''
+Returns the angle of the kth sample at the rth ring.
+'''
+def bresenham_theta(r, k):
+	return (2. * pi * k) / r;  #Maybe not 100% correct...
