@@ -1,10 +1,8 @@
 import polar;
-import shape;
 from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag;
 from scipy.misc import imshow;
 from scipy.fftpack import fft2;
 from scipy.signal.signaltools import convolve2d;
-
 
 #Performs a level set (thresholding) operation on the given function
 def to_ind(f, alpha=0.):
@@ -22,7 +20,7 @@ def plot_by_sample(fpft, r):
 			xx = int(round(p * cos(phi) + r));
 			yy = int(round(p * sin(phi) + r));
 			print  "xx=", xx, "yy=",yy, "r=",p, "theta=",phi;
-			res[xx,yy] = abs(shape.eval_pt(fpft, p * 0.1, phi));
+			res[xx,yy] = abs(polar.eval_pt(fpft, p * 0.1, phi));
 			print res[xx,yy]
 	return res;
 
@@ -33,13 +31,28 @@ imshow(A);
 B = load_img("shape2.png");
 imshow(B);
 
-Apft = shape.geom2polar_ft(A, 10);
-Atrunc = shape.polar_ft2geom(Apft, A.shape[0], A.shape[1]);
+Apft = polar.pfft(A, 10);
+Atrunc = polar.ipfft(Apft, A.shape[0], A.shape[1]);
 imshow(Atrunc);
 
-Bpft = shape.geom2polar_ft(B, 10);
-Btrunc = shape.polar_ft2geom(Bpft, B.shape[0], B.shape[1]);
+
+A2x = polar.pft_scale(Apft, 2.);
+a2xt = polar.ipfft(A2x, A.shape[0], A.shape[1]);
+imshow(a2xt);
+
+Ahx = polar.pft_scale(Apft, .5);
+ahxt = polar.ipfft(Ahx, A.shape[0], A.shape[1]);
+imshow(ahxt);
+
+
+
+Bpft = polar.pfft(B, 10);
+Btrunc = polar.ipfft(Bpft, B.shape[0], B.shape[1]);
 imshow(Btrunc);
+
+for t in arange(0, pi/2., 0.1):
+	imshow(polar.ipfft(polar.pft_rotate(Apft, t), A.shape[0], A.shape[1]));
+
 
 
 '''
@@ -49,11 +62,11 @@ imshow(abs(Asamp));
 imshow(real(Asamp));
 imshow(imag(Asamp));
 '''
-
+'''
 C = convolve2d(A, B, mode='full');
 imshow(C);
 
-Cpft = shape.polar_conv(Apft, Bpft);
-Ctrunc = shape.polar_ft2geom(Cpft, A.shape[0], A.shape[1]);
+Cpft = polar.pft_mult(Apft, Bpft);
+Ctrunc = polar.ipfft(Cpft, A.shape[0], A.shape[1]);
 imshow(Ctrunc);
-
+'''
