@@ -1,6 +1,9 @@
+import polar;
 import shape;
 from scipy import array, dtype, misc, pi;
 from scipy.misc import imshow;
+from scipy.fftpack import fft2;
+
 
 #Performs a level set (thresholding) operation on the given function
 def to_ind(f, alpha=0.):
@@ -11,8 +14,19 @@ def load_img(path):
 	return to_ind(misc.imread(path, flatten=True));
 
 
+
+B = [ array([0]), array([0,0,0,0,0,0,0,0]) ];
+
+for p in range(30):
+	B.append(array(range(8*(p+2)+4)));
+
+imshow(polar.polar2rect(B, 64, 64));
+
+
 A = load_img("shape1.png");
 imshow(A);
+
+imshow(abs(fft2(A)));
 
 Apft = shape.geom2polar_ft(A, 10);
 Atrunc = shape.polar_ft2geom(Apft, A.shape[0], A.shape[1]);
@@ -22,5 +36,4 @@ for k in range(16):
 	Arpft = shape.rotate_polar(Apft, pi * k / 32.);
 	Artrunc = shape.polar_ft2geom(Arpft, A.shape[0], A.shape[1]);
 	imshow(Artrunc);
-
 
