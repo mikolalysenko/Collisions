@@ -1,5 +1,5 @@
 import polar;
-from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag;
+from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange;
 from scipy.misc import imshow;
 from scipy.fftpack import fft2;
 from scipy.signal.signaltools import convolve2d;
@@ -23,6 +23,17 @@ def plot_by_sample(fpft, r):
 			res[xx,yy] = abs(polar.eval_pt(fpft, p * 0.1, phi));
 			print res[xx,yy]
 	return res;
+	
+	
+	
+import pylab;
+x = arange(-pi, pi, 0.1);
+y = sin(2. * x);
+
+pylab.plot(y);
+pylab.plot(polar.resample(y,120));
+pylab.show();
+
 
 
 A = load_img("shape1.png");

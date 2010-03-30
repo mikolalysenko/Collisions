@@ -328,16 +328,17 @@ def pft_rotate(pft, theta):
 '''
 Resamples f to resolution nr by interpolating in frequency
 '''
-def __resample(f, nr):
+def resample(f, nr):
 	if(len(f) == 1):
 		return ones(nr) * f[0];
-	xx = arange(0., nr, float(nr) / float(f.shape[0]))
 	yy = fft(f)
-	ft = interp1d(xx, yy, bounds_error=False, fill_value=0.)
+	ft = interp1d(arange(len(yy)), yy, bounds_error=False, fill_value=0.)
 	res = zeros((nr), yy.dtype)
 	for k in range(nr):
 		res[k] = ft(k)
-	return ifft(res)
+	return ifft(res) * nr / len(f);
+
+
 
 '''
 Rescales the uniform polar function pft
