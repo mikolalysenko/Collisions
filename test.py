@@ -30,10 +30,6 @@ import pylab;
 x = arange(-pi, pi, 0.1);
 y = sin(2. * x);
 
-pylab.plot(y);
-pylab.plot(polar.resample(y,120));
-pylab.show();
-
 
 A = load_img("shape1.png");
 imshow(A);
@@ -45,6 +41,10 @@ Apft = polar.pfft(A, 10);
 Atrunc = polar.ipfft(Apft, A.shape[0], A.shape[1]);
 imshow(Atrunc);
 
+Ashift = polar.pft_shift(Apft, 5., 0);
+Astrunc = polar.ipfft(Ashift, A.shape[0], A.shape[1]);
+imshow(Astrunc)
+
 A2x = polar.pft_scale(Apft, 2.);
 a2xt = polar.ipfft(A2x, A.shape[0], A.shape[1]);
 imshow(a2xt);
@@ -52,7 +52,6 @@ imshow(a2xt);
 Ahx = polar.pft_scale(Apft, .5);
 ahxt = polar.ipfft(Ahx, A.shape[0], A.shape[1]);
 imshow(ahxt);
-
 
 
 Bpft = polar.pfft(B, 10);

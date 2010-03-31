@@ -1,5 +1,5 @@
-from math import cos, sin, exp, sqrt, atan2, pi, floor;
-from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones;
+from math import cos, sin, sqrt, atan2, pi, floor;
+from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones, exp;
 from scipy.linalg.basic import norm;
 from scipy.fftpack.basic import fft2, ifft2, fft, ifft;
 from scipy.fftpack.helper import fftshift, ifftshift;
@@ -318,7 +318,24 @@ def pft_deriv(pft, dx, dy):
 			c[t] *= pow(1.j * r * cos(theta), dx) * pow(1.j * r * sin(theta), dy)
 		res.append(c)
 	return res;
-	
+
+
+'''
+Shifts the polar function pft
+'''
+def pft_shift(pft, x, y):
+	x /= float(len(pft));
+	y /= float(len(pft));
+	res = []
+	for r in range(len(pft)):
+		c = pft[r].copy()
+		for t in range(len(c)):
+			theta = t * 2. * pi / len(c)
+			c[t] *= exp(-1.j * r * (x*cos(theta) +  y*sin(theta)) )
+		res.append(c)
+	return res;
+
+
 '''
 Performs a polar convolution in the frequency domain
 '''
@@ -363,12 +380,6 @@ def pft_scale(pft, s):
 			break;
 		res.append(__resample(pft[ns], 8*k+4));
 	return res;
-
-'''
-Shifts the polar function pft
-'''
-def pft_shift(pft, x, y):
-	assert(False);
 
 '''
 Performs scalar multiplication on pft
