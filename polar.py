@@ -283,7 +283,7 @@ def ipfft(pft, xs, ys):
 Pads and centers f at a grid with sufficiently large rotational size
 '''
 def __cpad(f, r):
-	ns = max(int(round(norm(array(f.shape)))), 2*r+1);
+	ns = 2*max(int(round(norm(array(f.shape)/2.))), r)+1;
 	res = zeros((ns,ns));
 	c0 = array((ns / 2. - array(f.shape)/2.).round(), dtype('int'));
 	c1 = c0 + array(f.shape, dtype('int'));
@@ -305,6 +305,30 @@ def eval_pft(pft, p, phi):
 			#print cc, ss, v;
 			res += c[t] * v;
 	return res / (len(pft));
+	
+'''
+Computes the dxth x derivative and the dyth y derivative of pft
+'''
+def pft_deriv(pft, dx, dy):
+	res = []
+	for r in range(len(pft)):
+		c = pft[r].copy()
+		for t in range(len(c)):
+			theta = t * 2. * pi / len(c)
+			c[t] *= pow(1.j * r * cos(theta), dx) * pow(1.j * r * sin(theta), dy)
+		res.append(c)
+	return res;
+	
+def pft_dpolar(pft, dr, dtheta):
+	res = []
+	for r in range(len(pft)):
+		c = pft[r].copy()
+		for t in range(len(c)):
+			theta = t * 2. * pi / len(c)
+			c[t] *= pow(1.j * r, dr) * pow(1.j * theta, dtheta)
+		res.append(c)
+	return res;
+	
 	
 '''
 Performs a polar convolution in the frequency domain
