@@ -319,17 +319,6 @@ def pft_deriv(pft, dx, dy):
 		res.append(c)
 	return res;
 	
-def pft_dpolar(pft, dr, dtheta):
-	res = []
-	for r in range(len(pft)):
-		c = pft[r].copy()
-		for t in range(len(c)):
-			theta = t * 2. * pi / len(c)
-			c[t] *= pow(1.j * r, dr) * pow(1.j * theta, dtheta)
-		res.append(c)
-	return res;
-	
-	
 '''
 Performs a polar convolution in the frequency domain
 '''
@@ -352,17 +341,14 @@ def pft_rotate(pft, theta):
 '''
 Resamples f to resolution nr by interpolating in frequency
 '''
-def resample(f, nr):
+def __resample(f, nr):
 	if(len(f) == 1):
 		return ones(nr) * f[0];
-	yy = fft(f)
-	ft = interp1d(arange(len(yy)), yy, bounds_error=False, fill_value=0.)
-	res = zeros((nr), yy.dtype)
+	fl = interp1d(arange(0., nr, float(nr) / len(f)), f, bounds_error=False, fill_value=0.)
+	res = zeros((nr), f.dtype)
 	for k in range(nr):
-		res[k] = ft(k)
-	return ifft(res) * nr / len(f);
-
-
+		res[k] = fl(k)
+	return res
 
 '''
 Rescales the uniform polar function pft
@@ -371,8 +357,8 @@ def pft_scale(pft, s):
 	assert(s > 0);
 	res = [];
 	print len(pft);
-	for k in range(int(len(pft) * s)):
-		ns = int(round(k / s));
+	for k in range(int(len(pft) / s)):
+		ns = int(round(k * s));
 		if(ns >= len(pft)):
 			break;
 		res.append(__resample(pft[ns], 8*k+4));
