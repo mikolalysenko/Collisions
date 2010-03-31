@@ -25,7 +25,8 @@ def __resample_from_circle(f, R):
 		res[k] = ip(__theta_samples[R][k]);
 	return res;
 
-
+#Computes relative angles from Bresenham's algorithm
+# FIXME: This can probably be computed in closed form...
 def __init_theta(nR):
 	for r in range(len(__theta_samples),nR):
 		#Allocate result
