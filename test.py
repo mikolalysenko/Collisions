@@ -41,6 +41,12 @@ Apft = polar.pfft(A, 10);
 Atrunc = polar.ipfft(Apft, A.shape[0], A.shape[1]);
 imshow(Atrunc);
 
+Bpft = polar.pfft(B, 10);
+Btrunc = polar.ipfft(Bpft, B.shape[0], B.shape[1]);
+imshow(Btrunc);
+
+'''
+
 Ashift = polar.pft_shift(Apft, 5., 0);
 Astrunc = polar.ipfft(Ashift, A.shape[0], A.shape[1]);
 imshow(Astrunc)
@@ -54,12 +60,10 @@ ahxt = polar.ipfft(Ahx, A.shape[0], A.shape[1]);
 imshow(ahxt);
 
 
-Bpft = polar.pfft(B, 10);
-Btrunc = polar.ipfft(Bpft, B.shape[0], B.shape[1]);
-imshow(Btrunc);
 
 for t in arange(0, pi/2., 0.1):
 	imshow(polar.ipfft(polar.pft_rotate(Apft, t), A.shape[0], A.shape[1]));
+'''
 
 '''
 
@@ -69,11 +73,12 @@ imshow(abs(Asamp));
 imshow(real(Asamp));
 imshow(imag(Asamp));
 '''
-'''
-C = convolve2d(A, B, mode='full');
+
+
+C = convolve2d(Atrunc, Btrunc);
 imshow(C);
 
 Cpft = polar.pft_mult(Apft, Bpft);
 Ctrunc = polar.ipfft(Cpft, A.shape[0], A.shape[1]);
 imshow(Ctrunc);
-'''
+

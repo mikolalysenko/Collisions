@@ -1,3 +1,10 @@
+'''
+Polar Fourier Transforms! (truncated)
+
+This code is filled with some basic hacks for dealing with polar fourier transforms.  They aren't pretty, but they get the job done.
+
+'''
+
 from math import cos, sin, sqrt, atan2, pi, floor;
 from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones, exp;
 from scipy.linalg.basic import norm;
