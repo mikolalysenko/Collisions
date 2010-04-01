@@ -37,17 +37,11 @@ def __resample_from_circle(f, R):
 		res[k] = ip(__theta_samples[R][k]);
 	return res;
 
-<<<<<<< HEAD:polar.py
-#Computes relative angles from Bresenham's algorithm
-# FIXME: This can probably be computed in closed form...
-=======
-
 '''
 Initializes theta parameters for interpolation
 
 FIXME: This should be precalculated somehow
 '''
->>>>>>> 84c6ad255a02ed4498c4d383a2b6931e70a5c531:polar.py
 def __init_theta(nR):
 	for r in range(len(__theta_samples),nR):
 		#Allocate result
