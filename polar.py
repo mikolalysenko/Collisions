@@ -1,7 +1,7 @@
 '''
-Polar Fourier Transforms! (truncated)
+Polar Fourier Transforms
 
-This code is filled with some basic hacks for dealing with polar fourier transforms.  They aren't pretty, but they get the job done.
+This code is filled with some basic methods for dealing with polar fourier transforms and convolutions.
 
 '''
 
@@ -344,12 +344,18 @@ def pft_shift(pft, x, y):
 
 
 '''
+Computes the complex conjugate of the polar fourier transform
+'''
+def pft_conjugate(f):
+	return map(conjugate, f);
+
+'''
 Performs a polar convolution in the frequency domain
 '''
 def pft_mult(pX, pY):
 	res = []
 	for k in range(len(pX)):
-		res.append(pX[k] * conjugate(pY[k]));
+		res.append(pX[k] * pY[k]);
 	return res;
 
 '''

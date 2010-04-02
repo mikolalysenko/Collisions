@@ -79,6 +79,6 @@ C = convolve2d(Atrunc, Btrunc);
 imshow(C);
 
 Cpft = polar.pft_mult(Apft, Bpft);
-Ctrunc = polar.ipfft(Cpft, A.shape[0], A.shape[1]);
+Ctrunc = polar.ipfft(Cpft, A.shape[0] + B.shape[0], A.shape[1] + B.shape[1]);
 imshow(Ctrunc);
 
