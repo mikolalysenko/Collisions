@@ -28,7 +28,7 @@ class Obstacle:
 		sf = array(imresize(f, W, H) > 0., 'f')
 		sg = array(imresize(g, W, H) > 0., 'f')
 
-		self.obstacle 	= se2_conv(f, g, R)
+		self.potential 	= se2_conv(f, g, R)
 		grad_theta 		= se2_conv(diff_polar(f, 1, 0), g, R)
 
 		grad_x 		= zeros((W, H, R))
@@ -44,12 +44,31 @@ class Obstacle:
 		self.grad[:,:,:,0] = grad_x
 		self.grad[:,:,:,1] = grad_y
 		self.grad[:,:,:,2] = grad_theta
+		self.W = W
+		self.H = H
+		self.R = R
+
+	def __xfrom_to_idx(self, config_f, config_g)
+		rel = config_f.inv() * config_g
+		if(abs(rel.x[0]) >= self.W/2 || abs(rel.x[1]) >= self.H/2 ):
+			return None
+		ix = rel.x.round()
+		t = round(float(rel.theta) / (2. * pi) * float(self.R))
+		t = (t + 10 * self.R) % self.R
+		return ix, t
 
 	def check_collide(self, config_f, config_g):
-		return False
+		return self.collision_potential(config_f, config_g) > 1.
 
 	def collision_potential(self, config_f, config_g):
-		return 0.
+		ix, t = self.__xform_to_idx(config_f, config_g)
+		if(ix is None):
+			return 0
+		return self.potential[ix[0], ix[1], t]
 
 	def collision_gradient(self, config_f, config_g):
-		return [0., 0., 0.]
+		ix, t = self.__xform_to_idx(config_f, config_g)
+		if(ix is None):
+			return 0
+		return self.grad[ix[0], ix[1], t, :]
+
