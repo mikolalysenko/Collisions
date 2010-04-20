@@ -8,9 +8,9 @@ from se2 import *
 
 
 
-class RigidBody:
-	geometry = None;
 
+class RigidBody:
+	shape_num = 0
 	pos = None
 	momentum = None
 	

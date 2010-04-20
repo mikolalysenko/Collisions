@@ -1,9 +1,12 @@
-import polar;
+import polar
+import obstacle
 from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange
-from scipy.misc import imshow;
-from scipy.fftpack import fft2;
-from scipy.signal.signaltools import convolve2d;
-from scipy.fftpack.pseudo_diffs import diff;
+from scipy.misc import imshow
+from scipy.fftpack import fft2
+from scipy.signal.signaltools import convolve2d
+from scipy.fftpack.pseudo_diffs import diff
+
+
 
 #Performs a level set (thresholding) operation on the given function
 def to_ind(f, alpha=0.):
@@ -33,10 +36,14 @@ y = sin(2. * x);
 
 A = load_img("shape1.png");
 imshow(A);
+imshow(obstacle.diff_polar(A, 1))
 
+'''
 B = load_img("shape2.png");
 imshow(B);
+'''
 
+'''
 Apft = polar.pfft(A, 10);
 Atrunc = polar.ipfft(Apft, A.shape[0], A.shape[1]);
 imshow(Atrunc);
@@ -44,6 +51,8 @@ imshow(Atrunc);
 Bpft = polar.pfft(B, 10);
 Btrunc = polar.ipfft(Bpft, B.shape[0], B.shape[1]);
 imshow(Btrunc);
+'''
+
 
 '''
 
@@ -74,11 +83,12 @@ imshow(real(Asamp));
 imshow(imag(Asamp));
 '''
 
-
+'''
 C = convolve2d(Atrunc, Btrunc);
 imshow(C);
 
 Cpft = polar.pft_mult(Apft, Bpft);
 Ctrunc = polar.ipfft(Cpft, A.shape[0] + B.shape[0], A.shape[1] + B.shape[1]);
 imshow(Ctrunc);
+'''
 

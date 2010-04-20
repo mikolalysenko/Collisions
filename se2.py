@@ -6,7 +6,7 @@ from scipy import *
 '''
 An element of SE2
 '''
-def se2:
+class se2:
 	x = array([0.,0.],'f')
 	theta = 0.
 
