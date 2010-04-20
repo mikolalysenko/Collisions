@@ -276,7 +276,9 @@ def polar2rect( fp, xs, ys ):
 '''
 Computes the (truncated) polar Fourier transform of f, with r rotational samples
 '''
-def pfft(f, nR):
+def pfft(f, nR = -1):
+	if(nR < 0):
+		nR = round(sqrt(2.) * norm(f.shape) + 1)
 	return rect2polar(ifftshift(fft2(ifftshift(__cpad(f, nR)))), nR);
 
 
@@ -325,6 +327,20 @@ def pft_deriv(pft, dx, dy):
 			c[t] *= pow(1.j * r * cos(theta), dx) * pow(1.j * r * sin(theta), dy)
 		res.append(c)
 	return res;
+
+
+'''
+Computes the polar derivative of the function 
+'''
+def pft_polar_deriv(pft, dtheta, dr):
+	res = []
+	for r in range(len(pft)):
+		c = pft[r].copy()
+		for t in range(len(c)):
+			theta = t * 2. * pi / len(c) - pi
+			c[t] *= pow(1.j * theta, dtheta) * pow(1.j * r, dr)
+		res.append(c)
+	return res
 
 
 '''
