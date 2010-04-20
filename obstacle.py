@@ -39,13 +39,13 @@ def __cpad(f, ns):
 
 class Obstacle:
 
-	def __init__(self, f, g, W, H, R):
-		self.W = W
-		self.H = H
+	def __init__(self, f, g, R):
+		self.W = f.shape[0] + g.shape[1] + 1
+		self.H = f.shape[1] + g.shape[1] + 1
 		self.R = R
 
-		sf = fliplr(flipud(__cpad(array(imresize(f, W/2, H/2) > 0., 'f'), array([W,H]))))
-		sg = __cpad(array(imresize(g, W/2, H/2) > 0., 'f'), array([W,H]))
+		sf = fliplr(flipud(__cpad(f, array([W,H]))))
+		sg = __cpad(g, array([W,H]))
 
 		self.potential 	= se2_conv(f, g, R)
 		self.grad = zeros((W, H, R, 3))
