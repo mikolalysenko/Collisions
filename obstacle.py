@@ -1,41 +1,50 @@
+import pickle
 from scipy import *
 from numpy import *
-from scipy.ndimage import *
+import scipy.ndimage as ndi
 from scipy.misc import *
 from scipy.fftpack import *
 from scipy.signal import *
 from polar import *
 from se2 import *
 
-shape_list = []
-obstacle_matrix = []
-
-
-
+'''
+Implementation of SE2 convolution
+'''
 def se2_conv(f, g, R):
 	r = np.zeros((f.shape[0], f.shape[1], R))
 	for i in range(R):
-		r[:,:,i] = real(fftconvolve(imrotate(f, i / float(R) * 360.), g, 'same'))
+		r[:,:,i] = real(fftconvolve(g, imrotate(f, i / float(R) * 360.), 'same'))
 	return r
 
-def diff_polar(f, dtheta):
-	R = min(f.shape) / 2
+'''
+Polar differentiation
+'''
+def diff_polar(fs, dtheta):
+	R = int(round(sqrt(fs.shape[0] * fs.shape[0] + fs.shape[1] * fs.shape[1]) / 2 + 1.))
+	f = cpad(fs, array([2*R+1,2*R+1]))
 	pf = rect2polar(f, R)	
 	for r in range(R):
 		pf[r] = scipy.fftpack.diff(pf[r], dtheta)
 	tmp = polar2rect(pf, 2*R+1, 2*R+1)
-	tx = int(R - f.shape[0]/2)
-	ty = int(R - f.shape[1]/2)
-	return tmp[tx:(tx+f.shape[0]), ty:(ty+f.shape[1])]
+	tx = int(R - fs.shape[0]/2)
+	ty = int(R - fs.shape[1]/2)
+	return tmp[tx:(tx+fs.shape[0]), ty:(ty+fs.shape[1])]
 
+'''
+Cartesian differential
+'''
 def diff_cartesian(f, dx, dy):
 	ft = fftshift(fft2(f))
-	c = f.shape / 2
+	c = array(f.shape) / 2
 	for idx, v in ndenumerate(ft):
 		ft[idx] = v * pow(1.j * (idx[0] - c[0]), dx) * pow(1.j * (idx[1] - c[1]), dy)
 	return real(ifft2(ifftshift(ft)))
 
-def __cpad(f, ns):
+'''
+Pads/centers an image
+'''
+def cpad(f, ns):
 	res = zeros((ns[0],ns[1]));
 	c0 = array((ns / 2. - array(f.shape)/2.).round(), dtype('int'));
 	c1 = c0 + array(f.shape, dtype('int'));
@@ -43,16 +52,23 @@ def __cpad(f, ns):
 	return res;
 
 
-class Shape:
 
+
+'''
+Shape storage class
+'''
+class Shape:
 	def __init__(self, mass_field):
 		self.mass_field = mass_field
 		self.mass = sum(mass_field.flatten())
 
-		#Recenter shape so that its center of mass is at the center of the coordinate system
-		offset = (array(mass_field.shape) - array(center_of_mass(mass_field))) / 2.
-		self.mass_field = shift(mass_field, offset)
-		self.center = array(mass_field.shape) / 2
+		#Recenter shape so that its center of mass is at the center of image
+		center = array(ndi.center_of_mass(mass_field))
+		offset = array(mass_field.shape)/2 - center
+		nshape = (array(mass_field.shape) + 2. * abs(offset)).round()
+		tmp = cpad(mass_field, nshape)
+		self.mass_field = ndi.shift(tmp, offset, order=1)
+		self.center = array(self.mass_field.shape) / 2
 
 		#Compute moment of inertia
 		self.moment = 0.
@@ -60,29 +76,32 @@ class Shape:
 			r = array(x) - self.center
 			self.moment += p * dot(r,r)
 
-		self.indicator = array(mass_field > 0.001, 'f')
+		self.indicator = array(self.mass_field > 0.01, 'f')
 		self.shape_num = -1
 
+'''
+Configuration obstacle / convolution field
+'''
 class Obstacle:
-
 	def __init__(self, f, g, R):
 		self.W = f.shape[0] + g.shape[1] + 1
 		self.H = f.shape[1] + g.shape[1] + 1
 		self.R = R
 
-		sf = fliplr(flipud(__cpad(f, array([W,H]))))
-		sg = __cpad(g, array([W,H]))
+		sf = fliplr(flipud(cpad(f, array([self.W,self.H]))))
+		sg = cpad(g, array([self.W,self.H]))
 
-		self.potential 	= se2_conv(f, g, R)
-		self.grad = zeros((W, H, R, 3))
-		for r in range(R):
-			fr = imrotate(f, r / float(R) * 360.)
+		self.potential 	= se2_conv(sf, sg, self.R)
+		self.grad = zeros((self.W, self.H, self.R, 3))
+		for r in range(self.R):
+			print r
+			fr = imrotate(sf, r / float(self.R) * 360.)
 			fr_x = diff_cartesian(fr, 1, 0)
 			fr_y = diff_cartesian(fr, 0, 1)
 			fr_theta = diff_polar(fr, 1)
-			self.grad[:,:,r,0] = real(fftconvolve(g, fr_x, 'same'))
-			self.grad[:,:,r,1] = real(fftconvolve(g, fr_y, 'same'))
-			self.grad[:,:,r,2] = real(fftconvolve(g, fr_theta, 'same'))
+			self.grad[:,:,r,0] = real(fftconvolve(sg, fr_x, 'same'))
+			self.grad[:,:,r,1] = real(fftconvolve(sg, fr_y, 'same'))
+			self.grad[:,:,r,2] = real(fftconvolve(sg, fr_theta, 'same'))
 
 
 	def __xfrom_to_idx(self, config_f, config_g):
@@ -109,19 +128,45 @@ class Obstacle:
 			return 0
 		return self.grad[ix[0], ix[1], t, :]
 
+'''
+The shape/obstacle data base
+'''
+shape_list = []
+obstacle_matrix = []
 
 '''
 Adds a shape to the obstacle set
 '''
 def add_shape(f, R):
-	S = Shape(f, R)
-
+	#Create shape
+	S = Shape(f)
+	
+	#Add to shape list
 	S.shape_num = len(shape_list)
-	shape_list.append(self)
+	shape_list.append(S)
 
+	#Generate obstacles
 	obstacles = []
 	for k,T in enumerate(shape_list):
 		obstacles.append(Obstacle(S.indicator, T.indicator, R))
 	obstacle_matrix.append(obstacles)
+	return S
 
+'''
+Saves all of the shapes to the given file
+'''
+def save_shapes(filename):
+	outp = open(filename, 'wb')
+	pickle.dump(shape_list, outp)
+	pickle.dump(obstacle_matrix, outp)
+	outp.close()
+
+'''
+Restores all shapes from a file
+'''
+def load_shapes(filename):
+	inp = open(filename, 'rb')
+	shape_list = pickle.load(inp)
+	obstacle_matrix = pickle.load(inp)
+	inp.close()
 

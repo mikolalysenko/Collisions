@@ -12,17 +12,22 @@ def load_img(path):
 	return to_ind(misc.imread(path, flatten=True))
 
 A = load_img("shape1.png")
-S = shapes.add_shape(A)
+S = obstacle.add_shape(A, 16)
+
 
 print S.mass
 print S.center
 print S.moment
 
+imshow(S.mass_field)
 imshow(S.indicator)
 
+O = obstacle.obstacle_matrix[0][0]
 import enthought.mayavi.mlab as mlab
-mlab.pipeline.scalar_field(shapes.obstacles[0][0].potential)
-mlab.pipeline.vector_field(shapes.obstacles[0][0].grad[:,:,:,0], shapes.obstacles[0][0].grad[:,:,:,1], shapes.obstacles[0][0].grad[:,:,:,2])
-
+mlab.pipeline.scalar_field(O.potential)
+mlab.pipeline.scalar_field(O.grad[:,:,:,2])
+mlab.pipeline.scalar_field(O.grad[:,:,:,1])
+mlab.pipeline.scalar_field(O.grad[:,:,:,0])
+mlab.pipeline.vector_field(O.grad[:,:,:,0], O.grad[:,:,:,1], O.grad[:,:,:,2])
 
 

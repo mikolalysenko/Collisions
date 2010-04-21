@@ -10,9 +10,13 @@ from se2 import *
 
 class RigidBody:
 	shape_num = 0
-	pos = None
-	virtual_pos = None
-	momentum = None
+
+	pos = array([0., 0.])
+	rot = 0.
+	
+	lin_velocity = array([0., 0.])
+	ang_velocity = 0.
+
 	shape = None
 	
 	def __init__(self, geom):
@@ -31,6 +35,9 @@ class RigidBodySystem:
 		bodies.append(body)
 	
 	def integrate(self, dt):
+		for (i, body) in enumerate(bodies):
+			body.pos += dt * lin_velocity
+			body.rot += dt * ang_velocity
 		return 0
 
 
