@@ -14,6 +14,7 @@ import rigid_body
 class Visualization
 	
 	system = None
+	textures = None
 
 	def __init__(self, system):
 		self.system = system
@@ -27,6 +28,8 @@ class Visualization
 		#Initialize opengl
 		GL.resize(self.screen)
 		GL.init()
+
+		#Cache textures for all shapes
 
 	def update(self):
 		return 0
