@@ -10,19 +10,18 @@ class Shape:
 
 	def __init__(self, mass_field):
 		self.mass_field = mass_field
-
 		self.mass = sum(mass_field.flatten())
-		center = center_of_mass(mass_field)
 
 		#Recenter shape so that its center of mass is at the center of the coordinate system
-		self.mass_field = shift(mass_field, (mass_field.shape - center) / 2)
+		offset = (array(mass_field.shape) - array(center_of_mass(mass_field))) / 2.
+		self.mass_field = shift(mass_field, offset)
 		self.center = array(mass_field.shape) / 2
 
 		#Compute moment of inertia
 		self.moment = 0.
-		for x,y,p in ndenumerate(self.mass_field):
-			r = array([x,y]) - self.center
-			moment += p * dot(r,r)
+		for x,p in ndenumerate(self.mass_field):
+			r = array(x) - self.center
+			self.moment += p * dot(r,r)
 
 		self.indicator = array(mass_field > 0.001, 'f')
 
@@ -36,3 +35,6 @@ class Shape:
 			obstacles.append(Obstacle(self.indicator, s.indicator, R))
 		obstacle_matrix.append(obstacles)
 
+
+def add_shape(f):
+	return Shape(f)

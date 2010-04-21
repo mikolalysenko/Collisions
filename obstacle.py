@@ -1,10 +1,16 @@
 from scipy import *
 from numpy import *
+from scipy.ndimage import *
 from scipy.misc import *
 from scipy.fftpack import *
 from scipy.signal import *
 from polar import *
 from se2 import *
+
+shape_list = []
+obstacle_matrix = []
+
+
 
 def se2_conv(f, g, R):
 	r = np.zeros((f.shape[0], f.shape[1], R))
@@ -36,6 +42,26 @@ def __cpad(f, ns):
 	res[c0[0]:c1[0], c0[1]:c1[1]] = f;
 	return res;
 
+
+class Shape:
+
+	def __init__(self, mass_field):
+		self.mass_field = mass_field
+		self.mass = sum(mass_field.flatten())
+
+		#Recenter shape so that its center of mass is at the center of the coordinate system
+		offset = (array(mass_field.shape) - array(center_of_mass(mass_field))) / 2.
+		self.mass_field = shift(mass_field, offset)
+		self.center = array(mass_field.shape) / 2
+
+		#Compute moment of inertia
+		self.moment = 0.
+		for x,p in ndenumerate(self.mass_field):
+			r = array(x) - self.center
+			self.moment += p * dot(r,r)
+
+		self.indicator = array(mass_field > 0.001, 'f')
+		self.shape_num = -1
 
 class Obstacle:
 
@@ -82,4 +108,20 @@ class Obstacle:
 		if(ix is None):
 			return 0
 		return self.grad[ix[0], ix[1], t, :]
+
+
+'''
+Adds a shape to the obstacle set
+'''
+def add_shape(f, R):
+	S = Shape(f, R)
+
+	S.shape_num = len(shape_list)
+	shape_list.append(self)
+
+	obstacles = []
+	for k,T in enumerate(shape_list):
+		obstacles.append(Obstacle(S.indicator, T.indicator, R))
+	obstacle_matrix.append(obstacles)
+
 
