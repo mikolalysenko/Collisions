@@ -131,42 +131,55 @@ class Obstacle:
 '''
 The shape/obstacle data base
 '''
-shape_list = []
-obstacle_matrix = []
+class ShapeSet:
+	shape_list = []
+	obstacle_matrix = []
 
-'''
-Adds a shape to the obstacle set
-'''
-def add_shape(f, R):
-	#Create shape
-	S = Shape(f)
+	'''
+	Adds a shape to the obstacle set
+	'''
+	def add_shape(self, f, R):
+		#Create shape
+		S = Shape(f)
 	
-	#Add to shape list
-	S.shape_num = len(shape_list)
-	shape_list.append(S)
+		#Add to shape list
+		S.shape_num = len(shape_list)
+		self.shape_list.append(S)
 
-	#Generate obstacles
-	obstacles = []
-	for k,T in enumerate(shape_list):
-		obstacles.append(Obstacle(S.indicator, T.indicator, R))
-	obstacle_matrix.append(obstacles)
-	return S
+		#Generate obstacles
+		obstacles = []
+		for k,T in enumerate(shape_list):
+			obstacles.append(Obstacle(S.indicator, T.indicator, R))
+		self.obstacle_matrix.append(obstacles)
+		return S
 
-'''
-Saves all of the shapes to the given file
-'''
-def save_shapes(filename):
-	outp = open(filename, 'wb')
-	pickle.dump(shape_list, outp)
-	pickle.dump(obstacle_matrix, outp)
-	outp.close()
+	'''
+	Saves all of the shapes to the given file
+	'''
+	def save_shapes(self, filename):
+		outp = open(filename, 'wb')
+		pickle.dump(self.shape_list, outp)
+		pickle.dump(self.obstacle_matrix, outp)
+		outp.close()
 
-'''
-Restores all shapes from a file
-'''
-def load_shapes(filename):
-	inp = open(filename, 'rb')
-	shape_list = pickle.load(inp)
-	obstacle_matrix = pickle.load(inp)
-	inp.close()
+	'''
+	Restores all shapes from a file
+	'''
+	def load_shapes(self, filename):
+		inp = open(filename, 'rb')
+		self.shape_list = pickle.load(inp)
+		#self.obstacle_matrix = pickle.load(inp)
+		inp.close()
+	
+	'''
+	Retrieves a shape with the given index
+	'''
+	def get_shape(self, idx):
+		return self.shape_list[idx]
+	
+	def get_shapes(self):
+		return self.shape_list
+
+	def num_shapes(self):
+		return len(self.shape_list)
 
