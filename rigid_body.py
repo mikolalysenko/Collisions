@@ -26,6 +26,9 @@ class RigidBodySystem:
 	
 	def add_body(self, body):
 		self.bodies.append(body)
+		
+	def lagrangian(self):
+		
 	
 	def integrate(self, dt):
 		for (i, body) in enumerate(self.bodies):
@@ -33,11 +36,16 @@ class RigidBodySystem:
 			body.v_rot = body.rot + dt * body.ang_velocity
 		
 		for (i, A) in enumerate(self.bodies):
-			for (j, B) in enumerate(self.bodies):
+			for j in range(i):
+				B = self.bodies[j]
 				delta = self.shape_db.grad(A.shape_num, B.shape_num, A.v_pos, B.v_pos, A.v_rot, B.v_rot)
-				A.force += delta[:2] * 1000.
-				A.torque += delta[2] * 1000.
-			A.force += gravity
+				if(abs(delta[0]) > 1):
+					print i, j, delta
+				A.force += delta[:2]
+				A.torque += delta[2]
+				B.force -= delta[:2]
+				B.torque -= delta[2]
+			A.force += self.gravity
 			
 		for (i, body) in enumerate(self.bodies):
 			S = body.shape

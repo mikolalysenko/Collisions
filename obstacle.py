@@ -1,4 +1,3 @@
-import pickle
 from scipy import *
 from numpy import *
 import scipy.ndimage as ndi
@@ -104,36 +103,44 @@ class Obstacle:
 			self.grad[:,:,r,2] = real(fftconvolve(sg, fr_theta, 'same'))
 
 
-	def xfrom_to_idx(self, config_f, config_g):
+	def xform_to_idx(self, config_f, config_g):
 		rel = config_f.inv() * config_g
-		if(abs(rel.x[0]) >= self.W/2 or abs(rel.x[1]) >= self.H/2 ):
+		if(2. * ceil(abs(rel.x[0])) >= self.W or 2. * ceil(abs(rel.x[1])) >= self.H ):
 			return None
-		ix = rel.x.round()
+		ix = array((rel.x + array([self.W, self.H])/2.).round(), dtype('int'))
 		t = round(float(rel.theta) / (2. * pi) * float(self.R))
-		t = (t + 10 * self.R) % self.R
-		return ix, t
+		t = int(t + 10 * self.R) % self.R
+		return (ix, t)
 
 	def check_collide(self, config_f, config_g):
 		return self.collision_potential(config_f, config_g) > 1.
 
 	def collision_potential(self, config_f, config_g):
-		ix, t = self.xform_to_idx(config_f, config_g)
-		if(ix is None):
-			return 0
+		v = self.xform_to_idx(config_f, config_g)
+		if(v is None):
+			return 0.
+		ix = v[0]
+		t = v[1]
 		return self.potential[ix[0], ix[1], t]
 
 	def collision_gradient(self, config_f, config_g):
-		ix, t = self.xform_to_idx(config_f, config_g)
-		if(ix is None):
-			return 0
-		return self.grad[ix[0], ix[1], t, :]
+		v = self.xform_to_idx(config_f, config_g)
+		if(v is None):
+			return array([0.,0.,0.])
+		ix = v[0]
+		t = v[1]
+		if(self.potential[ix[0], ix[1], t] < 1.):
+			return array([0,0,0])
+		v = self.grad[ix[0], ix[1], t, :]
+		return v
 
 '''
 The shape/obstacle data base
 '''
 class ShapeSet:
-	shape_list = []
-	obstacle_matrix = []
+	def __init__(self):
+		self.shape_list = []
+		self.obstacle_matrix = []
 
 	'''
 	Adds a shape to the obstacle set
@@ -148,7 +155,7 @@ class ShapeSet:
 
 		#Generate obstacles
 		obstacles = []
-		for k,T in enumerate(self.shape_list):
+		for T in self.shape_list:
 			obstacles.append(Obstacle(S.indicator, T.indicator, R))
 		self.obstacle_matrix.append(obstacles)
 		return S

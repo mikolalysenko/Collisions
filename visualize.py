@@ -1,5 +1,3 @@
-from os import *
-from sys import *
 from scipy import *
 from numpy import *
 from ctypes import *
@@ -28,12 +26,22 @@ class Visualization:
 		
 		glViewport(0, 0, self.screen[0], self.screen[1])
 
-		#Cache textures for all shapes
 		glPixelStorei(GL_PACK_ALIGNMENT,1)			
 		glPixelStorei(GL_UNPACK_ALIGNMENT,1)
-		self.textures = glGenTextures(system.shape_db.num_shapes())
+		
+		#HACK: PyOpenGL is stupid, sometimes it returns an array other times it doesn't.  WTF?
+		if(system.shape_db.num_shapes() == 0):
+			self.textures = []
+		elif(system.shape_db.num_shapes() == 1):
+			self.textures = [glGenTextures(system.shape_db.num_shapes())]
+		else:
+			self.textures = glGenTextures(system.shape_db.num_shapes())
+		
+		#Cache all of the textures
 		for s in system.shape_db.get_shapes():
+			print "HI"
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[s.shape_num])
+			print "HERE!"
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -106,7 +114,7 @@ class Visualization:
 	def loop(self):
 		while(self.running):
 			self.do_events()
-			self.system.integrate(0.01)
+			self.system.integrate(0.001)
 			self.draw()
 			
 

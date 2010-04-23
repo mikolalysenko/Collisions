@@ -1,7 +1,5 @@
 from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange
 from scipy.misc import imshow
-
-from obstacle import *
 from rigid_body import *
 from visualize import *
 
@@ -10,17 +8,20 @@ inp = open("shapes.pkl", "rb")
 db = pickle.load(inp)
 inp.close()
 
+print len(db.shape_list)
+
+
 a = Body()
-a.pos = array([400.,0.])
+a.pos = array([100.,0.])
 a.shape = db.get_shape(0)
-a.lin_velocity = array([-1, 0])
-a.ang_velocity = -0.001
+a.lin_velocity = array([-1., 0.])
+a.ang_velocity = -0.01
 
 b = Body()
-b.pos = array([-400.,0.])
-b.shape = db.get_shape(1)
-b.lin_velocity = array([1, 0])
-b.ang_velocity = 0.001
+b.pos = array([-100.,0.])
+b.shape = db.get_shape(0)
+b.lin_velocity = array([1., 0.])
+b.ang_velocity = 0.01
 
 s = RigidBodySystem(db)
 s.add_body(a)
