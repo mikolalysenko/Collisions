@@ -17,7 +17,7 @@ a.ang_velocity = -0.01
 
 b = Body()
 b.pos = array([-100.,0.])
-b.shape = db.get_shape(0)
+b.shape = db.get_shape(1)
 b.lin_velocity = array([1., 0.])
 b.ang_velocity = 0.01
 
