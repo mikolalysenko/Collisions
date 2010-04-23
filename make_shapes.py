@@ -11,7 +11,12 @@ def to_ind(f, alpha=0.):
 def load_img(path):
 	return to_ind(misc.imread(path, flatten=True))
 
-obstacle.add_shape(load_img("shape1.png"), 64)
-obstacle.add_shape(load_img("shape2.png"), 64)
+db = obstacle.ShapeSet()
 
-obstacle.save_shapes("shapes.pkl")
+db.add_shape(load_img("shape1.png"), 64)
+db.add_shape(load_img("shape2.png"), 64)
+
+import pickle 
+outp = open("shapes.pkl", "wb")
+pickle.dump(db, outp)
+outp.close()

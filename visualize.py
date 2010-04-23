@@ -9,6 +9,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import obstacle
 import rigid_body
+import scipy.misc
 
 class Visualization:
 	
@@ -37,8 +38,10 @@ class Visualization:
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
-			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, s.indicator.shape[0], s.indicator.shape[1], 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, array(255. * s.indicator, dtype('byte')).flatten().tostring())
-
+			
+			s_flat = array(255. * s.indicator / max(s.indicator.flatten()), dtype('uint8'))
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, s_flat.shape[0], s_flat.shape[1], 0, GL_RED, GL_UNSIGNED_BYTE, s_flat.tostring('F'))
+			
 	def do_events(self):
 		for event in pygame.event.get():
 			if event.type == QUIT:
@@ -66,7 +69,7 @@ class Visualization:
 			glVertex2f(t,  500)
 		glEnd()
 		
-		glEnable(GL_DEPTH_TEST)
+		glDisable(GL_DEPTH_TEST)
 		glEnable(GL_BLEND)
 		glBlendFunc(GL_ONE, GL_ONE)
 		
@@ -84,13 +87,13 @@ class Visualization:
 			glRotatef(b.rot * 180. / pi, 0, 0, 1.)
 			
 			glBegin(GL_QUADS)
-			glTexCoord2f(W, H)
-			glVertex2f(-W/2., -H/2.)
-			glTexCoord2f(0, H)
-			glVertex2f( W/2., -H/2.)
-			glTexCoord2f(W, 0)
-			glVertex2f( W/2.,  H/2.)
 			glTexCoord2f(0, 0)
+			glVertex2f(-W/2., -H/2.)
+			glTexCoord2f(W, 0)
+			glVertex2f( W/2., -H/2.)
+			glTexCoord2f(W, H)
+			glVertex2f( W/2.,  H/2.)
+			glTexCoord2f(0, H)
 			glVertex2f(-W/2.,  H/2.)
 			glEnd()
 			
@@ -103,7 +106,7 @@ class Visualization:
 	def loop(self):
 		while(self.running):
 			self.do_events()
-			self.system.integrate(0.1)
+			self.system.integrate(0.01)
 			self.draw()
 			
 

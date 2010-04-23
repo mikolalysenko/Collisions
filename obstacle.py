@@ -104,7 +104,7 @@ class Obstacle:
 			self.grad[:,:,r,2] = real(fftconvolve(sg, fr_theta, 'same'))
 
 
-	def __xfrom_to_idx(self, config_f, config_g):
+	def xfrom_to_idx(self, config_f, config_g):
 		rel = config_f.inv() * config_g
 		if(abs(rel.x[0]) >= self.W/2 or abs(rel.x[1]) >= self.H/2 ):
 			return None
@@ -117,13 +117,13 @@ class Obstacle:
 		return self.collision_potential(config_f, config_g) > 1.
 
 	def collision_potential(self, config_f, config_g):
-		ix, t = self.__xform_to_idx(config_f, config_g)
+		ix, t = self.xform_to_idx(config_f, config_g)
 		if(ix is None):
 			return 0
 		return self.potential[ix[0], ix[1], t]
 
 	def collision_gradient(self, config_f, config_g):
-		ix, t = self.__xform_to_idx(config_f, config_g)
+		ix, t = self.xform_to_idx(config_f, config_g)
 		if(ix is None):
 			return 0
 		return self.grad[ix[0], ix[1], t, :]
@@ -143,33 +143,15 @@ class ShapeSet:
 		S = Shape(f)
 	
 		#Add to shape list
-		S.shape_num = len(shape_list)
+		S.shape_num = len(self.shape_list)
 		self.shape_list.append(S)
 
 		#Generate obstacles
 		obstacles = []
-		for k,T in enumerate(shape_list):
+		for k,T in enumerate(self.shape_list):
 			obstacles.append(Obstacle(S.indicator, T.indicator, R))
 		self.obstacle_matrix.append(obstacles)
 		return S
-
-	'''
-	Saves all of the shapes to the given file
-	'''
-	def save_shapes(self, filename):
-		outp = open(filename, 'wb')
-		pickle.dump(self.shape_list, outp)
-		pickle.dump(self.obstacle_matrix, outp)
-		outp.close()
-
-	'''
-	Restores all shapes from a file
-	'''
-	def load_shapes(self, filename):
-		inp = open(filename, 'rb')
-		self.shape_list = pickle.load(inp)
-		#self.obstacle_matrix = pickle.load(inp)
-		inp.close()
 	
 	'''
 	Retrieves a shape with the given index
@@ -182,4 +164,12 @@ class ShapeSet:
 
 	def num_shapes(self):
 		return len(self.shape_list)
+
+	def grad(self, s1, s2, pa, pb, ra, rb):
+		if(s1 < s2):
+			return -self.check_collision(s2, s1, pb, pa, rb, ra)
+		c1 = se2(pa, ra)
+		c2 = se2(pb, rb)
+		O = self.obstacle_matrix[s1][s2]
+		return O.collision_gradient(c1, c2)
 

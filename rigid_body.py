@@ -12,16 +12,16 @@ class Body:
 	
 	lin_velocity = array([0., 0.])
 	ang_velocity = 0.
+	
+	force = array([0., 0.])
+	torque = 0.
 
 	shape = None
 
 class RigidBodySystem:
-	bodies = []
-	gravity = -10.
-
 	def __init__(self, shape_db):
 		self.bodies = []
-		self.gravity = -10.
+		self.gravity = array([0., -10.])
 		self.shape_db = shape_db
 	
 	def add_body(self, body):
@@ -29,8 +29,25 @@ class RigidBodySystem:
 	
 	def integrate(self, dt):
 		for (i, body) in enumerate(self.bodies):
-			body.pos += dt * body.lin_velocity
-			body.rot += dt * body.ang_velocity
+			body.v_pos = body.pos + dt * body.lin_velocity
+			body.v_rot = body.rot + dt * body.ang_velocity
+		
+		for (i, A) in enumerate(self.bodies):
+			for (j, B) in enumerate(self.bodies):
+				delta = self.shape_db.grad(A.shape_num, B.shape_num, A.v_pos, B.v_pos, A.v_rot, B.v_rot)
+				A.force += delta[:2] * 1000.
+				A.torque += delta[2] * 1000.
+			A.force += gravity
+			
+		for (i, body) in enumerate(self.bodies):
+			S = body.shape
+			body.lin_velocity += body.force * dt / S.mass
+			body.pos += body.lin_velocity * dt
+			body.force = array([0.,0.])
+			body.ang_velocity += body.torque * dt / S.moment
+			body.rot += body.ang_velocity * dt
+			body.torque = 0.
+		
 		return 0
 
 
