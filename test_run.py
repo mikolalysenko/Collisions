@@ -8,8 +8,6 @@ inp = open("shapes.pkl", "rb")
 db = pickle.load(inp)
 inp.close()
 
-print len(db.shape_list)
-
 
 a = Body()
 a.pos = array([100.,0.])

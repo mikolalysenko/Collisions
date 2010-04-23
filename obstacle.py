@@ -93,7 +93,6 @@ class Obstacle:
 		self.potential 	= se2_conv(sf, sg, self.R)
 		self.grad = zeros((self.W, self.H, self.R, 3))
 		for r in range(self.R):
-			print r
 			fr = imrotate(sf, r / float(self.R) * 360.)
 			fr_x = diff_cartesian(fr, 1, 0)
 			fr_y = diff_cartesian(fr, 0, 1)

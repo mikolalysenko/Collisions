@@ -39,9 +39,7 @@ class Visualization:
 		
 		#Cache all of the textures
 		for s in system.shape_db.get_shapes():
-			print "HI"
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[s.shape_num])
-			print "HERE!"
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);

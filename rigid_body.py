@@ -27,9 +27,6 @@ class RigidBodySystem:
 	def add_body(self, body):
 		self.bodies.append(body)
 		
-	def lagrangian(self):
-		
-	
 	def integrate(self, dt):
 		for (i, body) in enumerate(self.bodies):
 			body.v_pos = body.pos + dt * body.lin_velocity

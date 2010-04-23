@@ -13,8 +13,8 @@ def load_img(path):
 
 db = obstacle.ShapeSet()
 
-db.add_shape(load_img("shape1.png"), 8)
-#db.add_shape(load_img("shape2.png"), 64)
+db.add_shape(load_img("shape1.png"), 64)
+db.add_shape(load_img("shape2.png"), 64)
 
 print len(db.shape_list)
 
