@@ -1,5 +1,12 @@
-from math import cos, sin, exp, sqrt, atan2, pi, floor;
-from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones;
+'''
+Polar Fourier Transforms
+
+This code is filled with some basic methods for dealing with polar fourier transforms and convolutions.
+
+'''
+
+from math import cos, sin, sqrt, atan2, pi, floor, tan;
+from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones, exp;
 from scipy.linalg.basic import norm;
 from scipy.fftpack.basic import fft2, ifft2, fft, ifft;
 from scipy.fftpack.helper import fftshift, ifftshift;
@@ -31,7 +38,8 @@ def __resample_from_circle(f, R):
 	for k in range(8*R+4):
 		s[k] = k * 2. * pi / float(8*R + 4);		
 	s1 = concatenate((s-2*pi, s, s+2*pi))
-	ip = interp1d(s1, concatenate((f, f, f)))
+	f1 = concatenate((f, f, f))
+	ip = interp1d(s1, f1)
 	res = zeros((8*R+4),f.dtype)
 	for k in range(8*R+4):
 		res[k] = ip(__theta_samples[R][k]);
@@ -94,7 +102,6 @@ def __init_theta(nR):
 				res[4*p-t+4] = res[3+3*p] + theta
 				t = t + 1
 				
-		print res;
 		__theta_samples.append(res)
 	
 
@@ -186,8 +193,7 @@ Converts striped polar image into a Cartesian image
 def polar2rect( fp, xs, ys ):
 	#Get size
 	R = len(fp)
-	assert(xs >= 2*R and ys >= 2*R)
-	
+    	
 	__init_theta(R);
 	
 	x0 = int(round(.5 * xs))
@@ -195,9 +201,6 @@ def polar2rect( fp, xs, ys ):
 
 	#Allocate result
 	f = zeros((xs, ys), fp[0].dtype)
-	
-	#print(f.dtype)
-	#print(fp[0].dtype)
 	
 	#Handle special cases
 	f[x0, y0] = fp[0][0]
@@ -268,7 +271,9 @@ def polar2rect( fp, xs, ys ):
 '''
 Computes the (truncated) polar Fourier transform of f, with r rotational samples
 '''
-def pfft(f, nR):
+def pfft(f, nR = -1):
+	if(nR < 0):
+		nR = int(round(sqrt(2.) * norm(f.shape) + 1))
 	return rect2polar(ifftshift(fft2(ifftshift(__cpad(f, nR)))), nR);
 
 
@@ -276,7 +281,10 @@ def pfft(f, nR):
 Computes the ivnerse polar Fourier transform of pft onto the xs by ys grid.
 '''
 def ipfft(pft, xs, ys):
-	return fftshift(real(ifft2(fftshift(polar2rect(pft, xs, ys)))))
+	t = fftshift(real(ifft2(fftshift(polar2rect(pft, 2*len(pft)+1, 2*len(pft)+1)))))
+	tx = len(pft) - xs / 2
+	ty = len(pft) - ys / 2
+	return t[tx:(tx+xs),ty:(ty+ys)]
 
 '''
 Pads and centers f at a grid with sufficiently large rotational size
@@ -301,7 +309,6 @@ def eval_pft(pft, p, phi):
 		for t in range(len(c)):
 			theta = t * 2*pi / len(c);
 			v = exp(m * p * r * cos(theta - phi));
-			#print cc, ss, v;
 			res += c[t] * v;
 	return res / (len(pft));
 	
@@ -317,25 +324,52 @@ def pft_deriv(pft, dx, dy):
 			c[t] *= pow(1.j * r * cos(theta), dx) * pow(1.j * r * sin(theta), dy)
 		res.append(c)
 	return res;
-	
-def pft_dpolar(pft, dr, dtheta):
+
+
+'''
+Computes the polar derivative of the function 
+'''
+def pft_polar_deriv(pft, dtheta, dr):
+	res = []
+	for r in range(len(pft)):
+		print r
+		c = pft[r].copy()
+		for t in range(len(c)):
+			theta = t * 2. * pi
+			c[t] *= pow(1.j * r * sin(theta), dtheta)
+		res.append(c)
+	return res
+
+
+'''
+Shifts the polar function pft
+'''
+def pft_shift(pft, x, y):
+	x /= float(len(pft));
+	y /= float(len(pft));
 	res = []
 	for r in range(len(pft)):
 		c = pft[r].copy()
 		for t in range(len(c)):
 			theta = t * 2. * pi / len(c)
-			c[t] *= pow(1.j * r, dr) * pow(1.j * theta, dtheta)
+			c[t] *= exp(-1.j * r (x*cos(theta) +  y*sin(theta)) )
 		res.append(c)
 	return res;
-	
-	
+
+
+'''
+Computes the complex conjugate of the polar fourier transform
+'''
+def pft_conjugate(f):
+	return map(conjugate, f);
+
 '''
 Performs a polar convolution in the frequency domain
 '''
 def pft_mult(pX, pY):
 	res = []
 	for k in range(len(pX)):
-		res.append(pX[k] * conjugate(pY[k]));
+		res.append(pX[k] * pY[k]);
 	return res;
 
 '''
@@ -351,17 +385,14 @@ def pft_rotate(pft, theta):
 '''
 Resamples f to resolution nr by interpolating in frequency
 '''
-def resample(f, nr):
+def __resample(f, nr):
 	if(len(f) == 1):
 		return ones(nr) * f[0];
-	yy = fft(f)
-	ft = interp1d(arange(len(yy)), yy, bounds_error=False, fill_value=0.)
-	res = zeros((nr), yy.dtype)
+	fl = interp1d(arange(0., nr, float(nr) / len(f)), f, bounds_error=False, fill_value=0.)
+	res = zeros((nr), f.dtype)
 	for k in range(nr):
-		res[k] = ft(k)
-	return ifft(res) * nr / len(f);
-
-
+		res[k] = fl(k)
+	return res
 
 '''
 Rescales the uniform polar function pft
@@ -369,19 +400,12 @@ Rescales the uniform polar function pft
 def pft_scale(pft, s):
 	assert(s > 0);
 	res = [];
-	print len(pft);
-	for k in range(int(len(pft) * s)):
-		ns = int(round(k / s));
+	for k in range(int(len(pft) / s)):
+		ns = int(round(k * s));
 		if(ns >= len(pft)):
 			break;
 		res.append(__resample(pft[ns], 8*k+4));
 	return res;
-
-'''
-Shifts the polar function pft
-'''
-def pft_shift(pft, x, y):
-	assert(False);
 
 '''
 Performs scalar multiplication on pft
