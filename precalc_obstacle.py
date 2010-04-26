@@ -103,7 +103,7 @@ class Obstacle:
 
 
 	def xform_to_idx(self, config_f, config_g):
-		rel = config_f.inv() * config_g
+		rel = config_g * config_f.inv()
 		if(2. * ceil(abs(rel.x[0])) >= self.W or 2. * ceil(abs(rel.x[1])) >= self.H ):
 			return None
 		ix = array((rel.x + array([self.W, self.H])/2.).round(), dtype('int'))
@@ -137,14 +137,15 @@ class Obstacle:
 The shape/obstacle data base
 '''
 class ShapeSet:
-	def __init__(self):
+	def __init__(self, R):
 		self.shape_list = []
 		self.obstacle_matrix = []
+		self.R = R
 
 	'''
 	Adds a shape to the obstacle set
 	'''
-	def add_shape(self, f, R):
+	def add_shape(self, f):
 		#Create shape
 		S = Shape(f)
 	
@@ -155,7 +156,7 @@ class ShapeSet:
 		#Generate obstacles
 		obstacles = []
 		for T in self.shape_list:
-			obstacles.append(Obstacle(S.indicator, T.indicator, R))
+			obstacles.append(Obstacle(S.indicator, T.indicator, self.R))
 		self.obstacle_matrix.append(obstacles)
 		return S
 	
@@ -173,7 +174,7 @@ class ShapeSet:
 
 	def grad(self, s1, s2, pa, pb, ra, rb):
 		if(s1 < s2):
-			return -self.check_collision(s2, s1, pb, pa, rb, ra)
+			return -self.grad(s2, s1, pb, pa, rb, ra)
 		c1 = se2(pa, ra)
 		c2 = se2(pb, rb)
 		O = self.obstacle_matrix[s1][s2]

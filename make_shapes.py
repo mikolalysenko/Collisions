@@ -1,7 +1,7 @@
 from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange
 from scipy.misc import imshow
 
-import obstacle
+import precalc_obstacle as obstacle
 
 #Performs a level set (thresholding) operation on the given function
 def to_ind(f, alpha=0.):
@@ -11,12 +11,12 @@ def to_ind(f, alpha=0.):
 def load_img(path):
 	return to_ind(misc.imread(path, flatten=True))
 
-db = obstacle.ShapeSet()
+db = obstacle.ShapeSet(64)
 
-db.add_shape(load_img("shape1.png"), 64)
-db.add_shape(load_img("shape2.png"), 64)
-db.add_shape(load_img("shape3.png"), 64)
-db.add_shape(load_img("shape4.png"), 64)
+db.add_shape(load_img("shape1.png"))
+db.add_shape(load_img("shape2.png"))
+db.add_shape(load_img("shape3.png"))
+db.add_shape(load_img("shape4.png"))
 
 print len(db.shape_list)
 

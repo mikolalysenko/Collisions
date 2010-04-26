@@ -1,16 +1,13 @@
-from scipy import *
-from numpy import *
+from scipy import array, exp, pi, sin, cos, arange
 import scipy.ndimage as ndi
-from scipy.misc import *
-from scipy.fftpack import *
-from scipy.signal import *
+from scipy.fftpack.pseudo_diffs import shift;
+from precalc_obstacle import diff_polar
 from polar import *
 from se2 import *
 
 
-#All shapes are fixed at the resolution SHAPE_X, SHAPE_Y for simplicity
+#All shapes are fixed at the resolution, SHAPE_R, for the sake of simplicity
 SHAPE_R = 256
-
 
 '''
 Pads/centers an image
@@ -27,9 +24,7 @@ Shape storage class
 '''
 class Shape:
 	def __init__(self, mass_field, R):
-		assert(mass_field.shape[0] == SHAPE_R)
-		assert(mass_field.shape[1] == SHAPE_R)
-			
+		
 		self.mass_field = mass_field
 		self.mass = sum(mass_field.flatten())
 
@@ -40,7 +35,10 @@ class Shape:
 		tmp = cpad(mass_field, nshape)
 		self.mass_field = ndi.shift(tmp, offset, order=1)
 		self.center = array(self.mass_field.shape) / 2
-
+		
+		assert(self.mass_field.shape[0] <= SHAPE_R)
+		assert(self.mass_field.shape[1] <= SHAPE_R)
+		
 		#Compute moment of inertia
 		self.moment = 0.
 		for x,p in ndenumerate(self.mass_field):
@@ -50,34 +48,32 @@ class Shape:
 		self.indicator = array(self.mass_field > 0.01, 'f')
 		self.shape_num = -1
 		
-		#Compute polar fourier truncation of signal
-		self.pft = pfft_func(cpad(self.indicator, 2*SHAPE_R), R)
-
+		#Compute polar fourier truncation of indicator
+		self.pft  = pfft(cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1])), R)
+		imshow(cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1])))
+		imshow(ipfft(self.pft, 513, 513))
+		self.pdft = pfft(diff_polar(cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1])), 1), R)
+		self.R = R
 
 '''
 The shape/obstacle data base
 '''
 class ShapeSet:
-	def __init__(self):
+	def __init__(self, R):
 		self.shape_list = []
-		self.obstacle_matrix = []
+		self.R = R
 
 	'''
 	Adds a shape to the obstacle set
 	'''
-	def add_shape(self, f, R):
+	def add_shape(self, f):
 		#Create shape
-		S = Shape(f)
+		S = Shape(f, self.R)
 	
 		#Add to shape list
 		S.shape_num = len(self.shape_list)
 		self.shape_list.append(S)
 
-		#Generate obstacles
-		obstacles = []
-		for T in self.shape_list:
-			obstacles.append(Obstacle(S.indicator, T.indicator, R))
-		self.obstacle_matrix.append(obstacles)
 		return S
 	
 	'''
@@ -91,12 +87,60 @@ class ShapeSet:
 
 	def num_shapes(self):
 		return len(self.shape_list)
+		
+	def potential(self, s1, s2, pa, pb, ra, rb):
+		ca = se2(pa, ra)
+		cb = se2(pb, rb)
+		
+		rel = cb * ca.inv()
+		print rel
+		if(2. * ceil(abs(rel.x[0])) >= SHAPE_R or 2. * ceil(abs(rel.x[1])) >= SHAPE_R ):
+			return 0.
+		
+		fa  = self.shape_list[s1].pft
+		fb  = self.shape_list[s2].pft
+		pr = norm(rel.x)
+		phi = atan2(rel.x[0], rel.x[1])
+		s_0	= fa[0][0] * fb[0][0]
+		m = 2.j * pi / (2*SHAPE_R + 1)
+		for r in range(1, self.R):
+			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
+			v 	 =  shift(fb[r], rel.theta * len(fb[r]) / (2. * pi)) * mult
+			s_0  += sum(v) / r
+		return real( s_0 / ((2. * SHAPE_R + 1) * (2. * SHAPE_R + 1)) )
+
 
 	def grad(self, s1, s2, pa, pb, ra, rb):
 		if(s1 < s2):
 			return -self.check_collision(s2, s1, pb, pa, rb, ra)
-		c1 = se2(pa, ra)
-		c2 = se2(pb, rb)
-		O = self.obstacle_matrix[s1][s2]
-		return O.collision_gradient(c1, c2)
+		
+		ca = se2(pa, ra)
+		cb = se2(pb, rb)
+		
+		rel = cb * ca.inv()
+		if(2. * ceil(abs(rel.x[0])) >= SHAPE_R or 2. * ceil(abs(rel.x[1])) >= SHAPE_R ):
+			return array([0.,0.,0.])
+		
+		fa  = self.shape_list[s1].pft
+		fb  = self.shape_list[s2].pft
+		db  = self.shape_list[s2].pdft
+		pr  = norm(rel.x)
+		phi = atan2(rel.x[0], rel.x[1])
+		s_0	= fa[0][0] * fb[0][0]
+		s_x = 0.
+		s_y = 0.
+		s_t = 0.
+		m   = 2.j * pi / (2*SHAPE_R + 1)
+		for r in range(1, self.R):
+			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
+			v 	 =  shift(fb[r], rel.theta * len(fb[r]) / (2. * pi)) * mult
+			s_0  += sum(v) / r
+			s_x  += sum(v * 1.j * cos(arange(len(fb[r])) * 2. * pi / len(fb[r])) )/ r
+			s_y  += sum(v * 1.j * sin(arange(len(fb[r])) * 2. * pi / len(fb[r])) ) / r
+			s_t	 += sum(shift(db[r], rel.theta * len(fb[r]) / (2. * pi)) * mult) / r
+		print s_0, s_x, s_y, s_t
+		if(real(s_0) <= 100000.):
+			return array([0., 0., 0.])
+		return array([real(s_x), real(s_y), real(s_t)])
+		
 

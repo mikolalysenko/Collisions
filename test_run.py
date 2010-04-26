@@ -22,9 +22,25 @@ b.shape = db.get_shape(2)
 b.lin_velocity = array([0., 0.])
 b.ang_velocity = 0.
 
+c = Body()
+c.pos = array([0.,-250.])
+c.shape = db.get_shape(0)
+c.lin_velocity = array([0., 1.])
+c.ang_velocity = 0.0
+
+d = Body()
+d.pos = array([200.,0])
+d.shape = db.get_shape(1)
+d.lin_velocity = array([-1., 0.])
+d.ang_velocity = 0.0
+
+
 s = RigidBodySystem(db)
 s.add_body(a)
 s.add_body(b)
+s.add_body(c)
+s.add_body(d)
+
 
 V = Visualization(s)
 V.loop()

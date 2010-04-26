@@ -94,13 +94,13 @@ class Visualization:
 			
 			glBegin(GL_QUADS)
 			glTexCoord2f(0, 0)
-			glVertex2f(-W/2., -H/2.)
+			glVertex2f( W/2., H/2.)
 			glTexCoord2f(W, 0)
-			glVertex2f( W/2., -H/2.)
+			glVertex2f(-W/2., H/2.)
 			glTexCoord2f(W, H)
-			glVertex2f( W/2.,  H/2.)
+			glVertex2f(-W/2., -H/2.)
 			glTexCoord2f(0, H)
-			glVertex2f(-W/2.,  H/2.)
+			glVertex2f( W/2., -H/2.)
 			glEnd()
 			
 			glPopMatrix()
@@ -112,7 +112,7 @@ class Visualization:
 	def loop(self):
 		while(self.running):
 			self.do_events()
-			self.system.integrate(0.001)
+			self.system.integrate(0.01)
 			self.draw()
 			
 
