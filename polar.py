@@ -45,7 +45,6 @@ def __resample_from_circle(f, R):
 		res[k] = ip(__theta_samples[R][k]);
 	return res;
 
-
 '''
 Initializes theta parameters for interpolation
 
