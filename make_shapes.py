@@ -15,10 +15,12 @@ db = obstacle.ShapeSet()
 
 db.add_shape(load_img("shape1.png"), 64)
 db.add_shape(load_img("shape2.png"), 64)
+db.add_shape(load_img("shape3.png"), 64)
+db.add_shape(load_img("shape4.png"), 64)
 
 print len(db.shape_list)
 
 import pickle 
-outp = open("shapes.pkl", "wb")
+outp = open("shapes2.pkl", "wb")
 pickle.dump(db, outp)
 outp.close()
