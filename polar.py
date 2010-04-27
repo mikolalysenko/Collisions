@@ -5,13 +5,13 @@ This code is filled with some basic methods for dealing with polar fourier trans
 
 '''
 
-from math import cos, sin, sqrt, atan2, pi, floor, tan;
-from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones, exp;
-from scipy.linalg.basic import norm;
-from scipy.fftpack.basic import fft2, ifft2, fft, ifft;
-from scipy.fftpack.helper import fftshift, ifftshift;
-from scipy.fftpack.pseudo_diffs import shift;
-from scipy.interpolate import interp1d;
+from math import atan2, pi, floor, tan
+from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones, exp, cos, sin, sqrt
+from scipy.linalg.basic import norm
+from scipy.fftpack.basic import fft2, ifft2, fft, ifft
+from scipy.fftpack.helper import fftshift, ifftshift
+from scipy.fftpack.pseudo_diffs import shift
+from scipy.interpolate import interp1d
 
 
 #Non-uniform theta samples
@@ -31,6 +31,13 @@ def __resample_to_circle(f, R):
 	return res;
 
 '''
+Creates interpolation function for moving to a circle
+'''
+def __resample_to_circle_func(f, R):
+	s1 = concatenate((__theta_samples[R] - 2*pi, __theta_samples[R], __theta_samples[R] + 2*pi));
+	return interp1d(s1,  concatenate((f, f, f)))
+
+'''
 Resamples uniform f to a non-uniform function on the Bresenham circle
 '''
 def __resample_from_circle(f, R):
@@ -44,7 +51,6 @@ def __resample_from_circle(f, R):
 	for k in range(8*R+4):
 		res[k] = ip(__theta_samples[R][k]);
 	return res;
-
 
 '''
 Initializes theta parameters for interpolation
@@ -105,6 +111,88 @@ def __init_theta(nR):
 				
 		__theta_samples.append(res)
 	
+
+
+
+
+'''
+Cartesian to Polar coordinate conversion
+
+Uses Bresenham's algorithm to convert the image f into a polar sampled image
+'''
+def rect2polar_func( f, R ):
+	#Check bounds on R
+	assert(R > 0)
+	
+	__init_theta(R);
+
+	xs, ys = f.shape
+	x0 = int(round(.5 * xs))
+	y0 = int(round(.5 * ys))
+	
+	fp = []
+	
+	#Initialize 0,1 as special cases
+	fp.append(lambda t : f[x0, y0])
+	
+	if R >= 1:
+		fp.append(__resample_to_circle_func(array(
+			[ f[x0,y0+1], f[x0+1,y0+1], f[x0+1,y0], f[x0+1,y0-1], f[x0,y0-1], f[x0-1,y0-1], f[x0-1,y0], f[x0-1,y0+1] ] ), 1) )
+		
+	#Perform Bresenham interpolation
+	for r in range(2, R):
+		#Allocate result
+		res = zeros((8 * r + 4), f.dtype)
+		p = 2 * r
+
+		#Handle axial directions
+		res[0    ] = f[x0,   y0+r]
+		res[1+  p] = f[x0+r, y0]
+		res[2+2*p] = f[x0,   y0-r]
+		res[3+3*p] = f[x0-r, y0]
+
+		#Set up scan conversion process
+		x = 0
+		y = r
+		s = 1 - r
+		t = 1
+
+		while t <= r:
+			#Handle x-crossing
+			x = x + 1
+	
+			res[    t+0] = f[x0+x,y0+y]
+			res[  p-t+1] = f[x0+y,y0+x]
+			res[  p+t+1] = f[x0+y,y0-x]
+			res[2*p-t+2] = f[x0+x,y0-y]
+			res[2*p+t+2] = f[x0-x,y0-y]
+			res[3*p-t+3] = f[x0-y,y0-x]
+			res[3*p+t+3] = f[x0-y,y0+x]
+			res[4*p-t+4] = f[x0-x,y0+y]
+			t = t + 1
+	
+			#Update status flag
+			if  s < 0:
+				s = s + 2 * x + 1
+			elif t <= r:
+				#Also handle y-crossing
+				y = y - 1
+				s = s + 2 * (x - y) + 1
+				
+				res[    t+0] = f[x0+x,y0+y]
+				res[  p-t+1] = f[x0+y,y0+x]
+				res[  p+t+1] = f[x0+y,y0-x]
+				res[2*p-t+2] = f[x0+x,y0-y]
+				res[2*p+t+2] = f[x0-x,y0-y]
+				res[3*p-t+3] = f[x0-y,y0-x]
+				res[3*p+t+3] = f[x0-y,y0+x]
+				res[4*p-t+4] = f[x0-x,y0+y]
+				t = t + 1
+				
+		fp.append(__resample_to_circle_func(res, r))
+        
+	return fp
+
 
 
 '''
@@ -184,6 +272,8 @@ def rect2polar( f, R ):
 		fp.append(__resample_to_circle(res, r))
         
 	return fp
+
+
 
 
 '''
@@ -279,6 +369,13 @@ def pfft(f, nR = -1):
 
 
 '''
+Polar fourier transform at interpolation points
+'''
+def pfft_func(f, nR):
+	return rect2polar_func(ifftshift(fft2(ifftshift(f))), nR)
+
+
+'''
 Computes the ivnerse polar Fourier transform of pft onto the xs by ys grid.
 '''
 def ipfft(pft, xs, ys):
@@ -303,15 +400,12 @@ Performs pointwise polynomial multiplication to evaluate a single point
 Point coordinates are given in polar form
 '''
 def eval_pft(pft, p, phi):
-	res = pft[0][0];	
-	m = -2.j * pi / (len(pft));
+	res = pft[0][0]
+	m = 2.j * pi / (2*len(pft) + 1)
 	for r in range(1, len(pft)):
-		c = pft[r];
-		for t in range(len(c)):
-			theta = t * 2*pi / len(c);
-			v = exp(m * p * r * cos(theta - phi));
-			res += c[t] * v;
-	return res / (len(pft));
+		mult = exp(m * r * p * cos(arange(len(pft[r])) * 2. * pi / len(pft[r]) - phi))
+		res += sum(pft[r] * mult) / r
+	return res / ((2. * len(pft) + 1) * (2. * len(pft) + 1))
 	
 '''
 Computes the dxth x derivative and the dyth y derivative of pft
@@ -416,4 +510,5 @@ def pft_scalar(pft, c):
 	for k in range(len(pft)):
 		res.append(pft[k] * c);
 	return res;
+	
 

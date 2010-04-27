@@ -1,30 +1,46 @@
-#from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange
-#from scipy.misc import imshow
-
-#from obstacle import *
-#from rigid_body import *
-#from visualize import *
+from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange
+from scipy.misc import imshow
+from rigid_body import *
+from visualize import *
 
 import pickle 
-inp = open('shapes.pkl', 'rb')
+inp = open("shapes2.pkl", "rb")
 db = pickle.load(inp)
 inp.close()
 
+
 a = Body()
-a.pos = array([400.,0.])
-a.shape = db.get_shape(0)
-a.lin_velocity = array([-1, 0])
-a.ang_velocity = -0.001
+a.pos = array([0.,150.])
+a.shape = db.get_shape(3)
+a.lin_velocity = array([0., -10.])
+a.ang_velocity = 0.0
 
 b = Body()
-b.pos = array([-400.,0.])
-b.shape = db.get_shape(1)
-b.lin_velocity = array([1, 0])
-b.ang_velocity = 0.001
+b.pos = array([0.,0.])
+b.rot = pi / 2.
+b.shape = db.get_shape(2)
+b.lin_velocity = array([0., 0.])
+b.ang_velocity = 0.
+
+c = Body()
+c.pos = array([0.,-250.])
+c.shape = db.get_shape(0)
+c.lin_velocity = array([0., 1.])
+c.ang_velocity = 0.0
+
+d = Body()
+d.pos = array([200.,0])
+d.shape = db.get_shape(1)
+d.lin_velocity = array([-1., 0.])
+d.ang_velocity = 0.0
+
 
 s = RigidBodySystem(db)
 s.add_body(a)
 s.add_body(b)
+s.add_body(c)
+s.add_body(d)
+
 
 V = Visualization(s)
 V.loop()
