@@ -5,8 +5,6 @@ from scipy import matrix, array, eye
 from obstacle import *
 
 class Body:
-	shape_num = 0
-
 	pos = array([0., 0.])
 	rot = 0.
 	
@@ -35,7 +33,7 @@ class RigidBodySystem:
 		for (i, A) in enumerate(self.bodies):
 			for j in range(i):
 				B = self.bodies[j]
-				delta = self.shape_db.grad(A.shape_num, B.shape_num, A.v_pos, B.v_pos, A.v_rot, B.v_rot) * 100.
+				delta = self.shape_db.grad(A.shape.shape_num, B.shape.shape_num, A.v_pos, B.v_pos, A.v_rot, B.v_rot) * 100.
 				if(abs(delta[0]) > 1):
 					print i, j, delta
 				A.force += delta[:2]

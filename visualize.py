@@ -90,15 +90,18 @@ class Visualization:
 			
 			glPushMatrix()
 			glTranslatef(b.pos[0], b.pos[1], 0.)
-			glRotatef(b.rot * 180. / pi, 0, 0, 1.)
+			glRotatef(90. + b.rot * 180. / pi, 0, 0, 1.)
 			
 			glBegin(GL_QUADS)
 			glTexCoord2f(0, 0)
 			glVertex2f( W/2., H/2.)
+			
 			glTexCoord2f(W, 0)
 			glVertex2f(-W/2., H/2.)
+			
 			glTexCoord2f(W, H)
 			glVertex2f(-W/2., -H/2.)
+			
 			glTexCoord2f(0, H)
 			glVertex2f( W/2., -H/2.)
 			glEnd()
@@ -112,7 +115,7 @@ class Visualization:
 	def loop(self):
 		while(self.running):
 			self.do_events()
-			self.system.integrate(0.01)
+			self.system.integrate(0.0001)
 			self.draw()
 			
 
