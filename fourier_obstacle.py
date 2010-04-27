@@ -1,4 +1,4 @@
-from scipy import array, exp, pi, sin, cos, arange
+from scipy import array, exp, pi, sin, cos, arange, conjugate
 import scipy.ndimage as ndi
 from scipy.fftpack.pseudo_diffs import shift;
 from precalc_obstacle import diff_polar
@@ -92,7 +92,7 @@ class ShapeSet:
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
 		
-		rel = cb * ca.inv()
+		rel = ca * cb.inv()
 		print rel
 		if(2. * ceil(abs(rel.x[0])) >= SHAPE_R or 2. * ceil(abs(rel.x[1])) >= SHAPE_R ):
 			return 0.
@@ -100,47 +100,57 @@ class ShapeSet:
 		fa  = self.shape_list[s1].pft
 		fb  = self.shape_list[s2].pft
 		pr = norm(rel.x)
-		phi = atan2(rel.x[0], rel.x[1])
-		s_0	= fa[0][0] * fb[0][0]
+		phi = atan2(-rel.x[0], -rel.x[1])
+		s_0	= fa[0][0] * fb[0][0] * pi
 		m = 2.j * pi / (2*SHAPE_R + 1)
 		for r in range(1, self.R):
 			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
-			v 	 =  shift(fb[r], rel.theta * len(fb[r]) / (2. * pi)) * mult
-			s_0  += sum(v) / r
-		return real( s_0 / ((2. * SHAPE_R + 1) * (2. * SHAPE_R + 1)) )
+			v 	 =  conjugate(shift(fb[r], rel.theta * len(fb[r]) / (2. * pi))) * mult
+			s_0  += sum(v) * r * 2. * pi / (len(fb[r]))
+		return real( s_0 ) / ((2. * SHAPE_R + 1.)**2)
 
 
 	def grad(self, s1, s2, pa, pb, ra, rb):
-		if(s1 < s2):
-			return -self.check_collision(s2, s1, pb, pa, rb, ra)
+		#if(s1 < s2):
+		#	print "flip"
+		#	return -self.grad(s2, s1, pb, pa, rb, ra)
 		
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
 		
-		rel = cb * ca.inv()
+		rel = ca * cb.inv()
 		if(2. * ceil(abs(rel.x[0])) >= SHAPE_R or 2. * ceil(abs(rel.x[1])) >= SHAPE_R ):
 			return array([0.,0.,0.])
+		
+		print rel
 		
 		fa  = self.shape_list[s1].pft
 		fb  = self.shape_list[s2].pft
 		db  = self.shape_list[s2].pdft
 		pr  = norm(rel.x)
-		phi = atan2(rel.x[0], rel.x[1])
-		s_0	= fa[0][0] * fb[0][0]
+		phi = atan2(-rel.x[0], -rel.x[1])
+		s_0	= fa[0][0] * fb[0][0] * pi
 		s_x = 0.
 		s_y = 0.
 		s_t = 0.
 		m   = 2.j * pi / (2*SHAPE_R + 1)
 		for r in range(1, self.R):
 			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
-			v 	 =  shift(fb[r], rel.theta * len(fb[r]) / (2. * pi)) * mult
-			s_0  += sum(v) / r
-			s_x  += sum(v * 1.j * cos(arange(len(fb[r])) * 2. * pi / len(fb[r])) )/ r
-			s_y  += sum(v * 1.j * sin(arange(len(fb[r])) * 2. * pi / len(fb[r])) ) / r
-			s_t	 += sum(shift(db[r], rel.theta * len(fb[r]) / (2. * pi)) * mult) / r
-		print s_0, s_x, s_y, s_t
-		if(real(s_0) <= 100000.):
+			v 	 =  conjugate(shift(fb[r], rel.theta * len(fb[r]) / (2. * pi))) * mult
+			h	 = 	r * 2. * pi / (len(fb[r]))
+			s_0  += sum(v) * h
+			s_x  += sum(v * 1.j * cos(arange(len(fb[r])) * 2. * pi / len(fb[r])) ) * h
+			s_y  += sum(v * 1.j * sin(arange(len(fb[r])) * 2. * pi / len(fb[r])) ) * h
+			s_t	 += sum(shift(db[r], rel.theta * len(fb[r]) / (2. * pi)) * mult)   * h
+		
+		mm = 1. / ((2. * SHAPE_R + 1.)**2)
+		s_0 *= mm
+		s_x *= mm
+		s_y *= mm
+		s_t *= mm
+		#print s_0, s_x, s_y, s_t
+		if(real(s_0) <= 100.):
 			return array([0., 0., 0.])
-		return array([real(s_x), real(s_y), real(s_t)])
+		return -array([real(s_x), real(s_y), real(s_t)])
 		
 
