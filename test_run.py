@@ -1,12 +1,12 @@
-from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange
-from scipy.misc import imshow
+#from scipy import array, dtype, misc, pi, zeros, arange, cos, sin, real, imag, arange
+#from scipy.misc import imshow
 
-from obstacle import *
-from rigid_body import *
-from visualize import *
+#from obstacle import *
+#from rigid_body import *
+#from visualize import *
 
 import pickle 
-inp = open("shapes.pkl", "rb")
+inp = open('shapes.pkl', 'rb')
 db = pickle.load(inp)
 inp.close()
 
