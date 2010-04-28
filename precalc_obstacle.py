@@ -83,7 +83,7 @@ Configuration obstacle / convolution field
 '''
 class Obstacle:
 	def __init__(self, f, g, R):
-		self.W = f.shape[0] + g.shape[1] + 1
+		self.W = f.shape[0] + g.shape[0] + 1
 		self.H = f.shape[1] + g.shape[1] + 1
 		self.R = R
 
@@ -103,12 +103,15 @@ class Obstacle:
 
 
 	def xform_to_idx(self, config_f, config_g):
-		rel = config_g * config_f.inv()
-		if(2. * ceil(abs(rel.x[0])) >= self.W or 2. * ceil(abs(rel.x[1])) >= self.H ):
+		rel = config_f * config_g.inv()
+		if(2. * ceil(abs(rel.x[0])) >= self.H or 2. * ceil(abs(rel.x[1])) >= self.W ):
 			return None
+		print "here", rel
+		rel.x[1] *= -1
 		ix = array((rel.x + array([self.W, self.H])/2.).round(), dtype('int'))
 		t = round(float(rel.theta) / (2. * pi) * float(self.R))
 		t = int(t + 10 * self.R) % self.R
+		print ix, t
 		return (ix, t)
 
 	def check_collide(self, config_f, config_g):
@@ -126,12 +129,22 @@ class Obstacle:
 		v = self.xform_to_idx(config_f, config_g)
 		if(v is None):
 			return array([0.,0.,0.])
-		ix = v[0]
+		ix = array([v[0][1], v[0][0]], 'f')
 		t = v[1]
 		if(self.potential[ix[0], ix[1], t] < 1.):
 			return array([0,0,0])
+		#self.plot_collis(ix, t)
 		v = self.grad[ix[0], ix[1], t, :]
 		return v
+	
+	def plot_collis(self, ix, t):
+		img  = zeros((self.W, self.H, 3))
+		img[:,:,0] = self.potential[:,:,t].copy()
+		img[:,:,1] = self.potential[:,:,t].copy()
+		img[:,:,2] = self.potential[:,:,t].copy()
+		img /= max(img[:,:,0].flatten())
+		img[ix[0], ix[1], :] = array([1., 0., 0.])
+		imshow(img)
 
 '''
 The shape/obstacle data base

@@ -8,6 +8,9 @@ inp = open("shapes2.pkl", "rb")
 db = pickle.load(inp)
 inp.close()
 
+for (i, s) in enumerate(db.shape_list):
+	print i, s.shape_num
+
 
 a = Body()
 a.pos = array([0.,150.])
@@ -17,8 +20,8 @@ a.ang_velocity = 0.0
 
 b = Body()
 b.pos = array([0.,0.])
-b.rot = pi / 2.
-b.shape = db.get_shape(2)
+b.rot = 0.
+b.shape = db.get_shape(1)
 b.lin_velocity = array([0., 0.])
 b.ang_velocity = 0.
 
@@ -38,8 +41,8 @@ d.ang_velocity = 0.0
 s = RigidBodySystem(db)
 s.add_body(a)
 s.add_body(b)
-s.add_body(c)
-s.add_body(d)
+#s.add_body(c)
+#s.add_body(d)
 
 
 V = Visualization(s)
