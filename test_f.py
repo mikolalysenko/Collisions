@@ -42,11 +42,11 @@ s1 = db.get_shape(1)
 
 #imshow(convolve2d(s0.indicator, s1.indicator))
 #imshow(ipfft(pft_mult(s0.pft, s1.pft), 512, 512))
-
+'''
 pp = zeros((64, 64,3))
 for x in range(64):
 	for y in range(64):
-		pp[x,y] = db.potential(0, 1, array([256., 256.]), 8. * array([x,y],'f'), 0., 0.)
+		pp[x,y] = db.grad(1, 0, array([0.,0.]), 8. * array([x,y],'f') - array([256., 256.]), 0., 0.)
 		#p = (array([x,y], 'f') - 32)
 		#r = norm(p)
 		#t = atan2(p[0], p[1])
@@ -60,9 +60,9 @@ imshow(kk)
 
 imsave("test1.png", pp)
 imsave("test2.png", kk) 
-
+'''
 a = Body()
-a.pos = array([0.,150.])
+a.pos = array([-20.,150.])
 a.shape = db.get_shape(1)
 a.lin_velocity = array([0., -10.])
 a.ang_velocity = 0.0
