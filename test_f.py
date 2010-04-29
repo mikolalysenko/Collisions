@@ -48,7 +48,7 @@ s1 = db.get_shape(1)
 for x in range(64):
 	for y in range(64):
 		print x,y
-		pp[x,y,:] = db.grad(1, 0, array([0.,0.]), 8. * array([x,y],'f') - array([256., 256.]), 0., 0.)
+		pp[x,y,:] = db.grad(1, 0, 8. * array([x,y],'f') - array([256., 256.]), array([0.,0.]), 0., 0.)
 		print pp[x,y,:]
 		#p = (array([x,y], 'f') - 32)
 		#r = norm(p)

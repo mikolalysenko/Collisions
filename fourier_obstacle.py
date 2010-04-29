@@ -140,7 +140,7 @@ class ShapeSet:
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
 		
-		rel = ca.inv() * cb
+		rel = ca * cb.inv()
 		A = self.shape_list[s1]
 		B = self.shape_list[s2]
 		if(ceil(abs(rel.x[0])) >= A.radius + B.radius or ceil(abs(rel.x[1])) >= A.radius + B.radius ):
@@ -163,7 +163,7 @@ class ShapeSet:
 		s_x = 0.
 		s_y = 0.
 		s_t = 0.
-		m   = 1.j * pi / SHAPE_R
+		m   = pi / SHAPE_R
 		for r in range(1, self.R):
 			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
 			ss   =  0.		#Shift factor

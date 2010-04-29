@@ -46,7 +46,7 @@ class Visualization:
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
 			
 			s_flat = array(255. * s.indicator / max(s.indicator.flatten()), dtype('uint8'))
-			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, s_flat.shape[0], s_flat.shape[1], 0, GL_RED, GL_UNSIGNED_BYTE, s_flat.tostring('F'))
+			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, s_flat.shape[1], s_flat.shape[0], 0, GL_RED, GL_UNSIGNED_BYTE, s_flat.tostring('C'))
 			
 	def do_events(self):
 		for event in pygame.event.get():
@@ -90,20 +90,20 @@ class Visualization:
 			
 			glPushMatrix()
 			glTranslatef(b.pos[0], b.pos[1], 0.)
-			glRotatef(b.rot * 180. / pi, 0, 0, 1.)
+			glRotatef(90. + b.rot * 180. / pi, 0, 0, 1.)
 			
 			glBegin(GL_QUADS)
 			glTexCoord2f(0, 0)
-			glVertex2f( W/2., H/2.)
+			glVertex2f( W, -H)
 			
 			glTexCoord2f(W, 0)
-			glVertex2f(-W/2., H/2.)
+			glVertex2f(-W, -H)
 			
 			glTexCoord2f(W, H)
-			glVertex2f(-W/2., -H/2.)
+			glVertex2f(-W, H)
 			
 			glTexCoord2f(0, H)
-			glVertex2f( W/2., -H/2.)
+			glVertex2f( W, H)
 			glEnd()
 			
 			glPopMatrix()
