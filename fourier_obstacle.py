@@ -6,6 +6,8 @@ from precalc_obstacle import diff_polar
 from polar import *
 from se2 import *
 
+pp = zeros((64,64,3))
+show_pp = False
 
 #All shapes are fixed at the resolution, SHAPE_R, for the sake of simplicity
 SHAPE_R = 256
@@ -104,7 +106,8 @@ class ShapeSet:
 
 	def num_shapes(self):
 		return len(self.shape_list)
-		
+	
+	'''
 	def potential(self, s1, s2, pa, pb, ra, rb):
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
@@ -127,7 +130,7 @@ class ShapeSet:
 			v 	 =  conjugate(shift(fb[r], rel.theta * len(fb[r]) / (2. * pi))) * mult
 			s_0  += sum(v) * r * 2. * pi / (len(fb[r]))
 		return real( s_0 ) / ((2. * SHAPE_R + 1.)**2)
-
+	'''
 
 	def grad(self, s1, s2, pa, pb, ra, rb):
 		#if(s1 < s2):
@@ -137,7 +140,7 @@ class ShapeSet:
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
 		
-		rel = ca * cb.inv()
+		rel = ca.inv() * cb
 		A = self.shape_list[s1]
 		B = self.shape_list[s2]
 		if(ceil(abs(rel.x[0])) >= A.radius + B.radius or ceil(abs(rel.x[1])) >= A.radius + B.radius ):
@@ -145,14 +148,15 @@ class ShapeSet:
 		
 		print rel
 		
+		
 		fa  = self.shape_list[s1].pft
 		fb  = self.shape_list[s2].pft
 		db  = self.shape_list[s2].pdft
-		
 		ea 	= self.shape_list[s1].energy
 		eb 	= self.shape_list[s2].energy
 		cutoff = .5 * self.shape_list[s1].total_energy * self.shape_list[s2].total_energy / (SHAPE_R * SHAPE_R)
 		
+		print show_pp
 		pr  = norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
 		s_0	= fa[0][0] * fb[0][0] * pi
@@ -162,8 +166,8 @@ class ShapeSet:
 		m   = 1.j * pi / SHAPE_R
 		for r in range(1, self.R):
 			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
-			ss   =  0.
-			v 	 =  conjugate(c_shift(fb[r], ss)) * mult
+			ss   =  0.		#Shift factor
+			v 	 =  c_shift(fb[r], ss) * mult
 			h	 = 	r * 2. * pi / (len(fb[r]))
 			s_0  += sum(real(v)) * h
 			if(s_0 + ea[r] + eb[r] <= cutoff):
@@ -171,13 +175,21 @@ class ShapeSet:
 				return array([0.,0.,0.])
 			s_x  += sum(real(v * 1.j * cos(arange(len(fb[r])) * 2. * pi / len(fb[r]))) ) * h
 			s_y  += sum(real(v * 1.j * sin(arange(len(fb[r])) * 2. * pi / len(fb[r]))) ) * h
-			s_t	 += sum(real(conjugate(c_shift(db[r], ss)) * mult))   * h
+			s_t	 += sum(real(c_shift(db[r], ss) * mult))   * h
 		
 		#print s_0, s_x, s_y, s_t
 		if(real(s_0) <= cutoff):
 			return array([0., 0., 0.])
+
 		g = array([real(s_x), real(s_y), real(s_t)])
+				
+		if(show_pp):
+			ix = array((rel.x * 64. / 512. + 32.).round() + 64, 'i') % 64
+			print ix
+			print 'g=', g, 'pp=', pp[ix[0], ix[1],:]
+			pp[ix[0], ix[1], :] = max(pp.flatten())
+			imshow(pp)
+
 		print "HIT: ", rel, g
-		return -g
-		
+		return g		
 

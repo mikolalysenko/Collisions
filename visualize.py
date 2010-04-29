@@ -90,7 +90,7 @@ class Visualization:
 			
 			glPushMatrix()
 			glTranslatef(b.pos[0], b.pos[1], 0.)
-			glRotatef(90. + b.rot * 180. / pi, 0, 0, 1.)
+			glRotatef(b.rot * 180. / pi, 0, 0, 1.)
 			
 			glBegin(GL_QUADS)
 			glTexCoord2f(0, 0)

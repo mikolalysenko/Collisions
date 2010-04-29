@@ -6,6 +6,8 @@ from visualize import *
 
 import fourier_obstacle as obstacle
 
+from fourier_obstacle import pp, show_pp
+
 def to_ind(f, alpha=0.):
 	return array(f > alpha, dtype('float'))
 
@@ -42,11 +44,12 @@ s1 = db.get_shape(1)
 
 #imshow(convolve2d(s0.indicator, s1.indicator))
 #imshow(ipfft(pft_mult(s0.pft, s1.pft), 512, 512))
-'''
-pp = zeros((64, 64,3))
+
 for x in range(64):
 	for y in range(64):
-		pp[x,y] = db.grad(1, 0, array([0.,0.]), 8. * array([x,y],'f') - array([256., 256.]), 0., 0.)
+		print x,y
+		pp[x,y,:] = db.grad(1, 0, array([0.,0.]), 8. * array([x,y],'f') - array([256., 256.]), 0., 0.)
+		print pp[x,y,:]
 		#p = (array([x,y], 'f') - 32)
 		#r = norm(p)
 		#t = atan2(p[0], p[1])
@@ -54,13 +57,15 @@ for x in range(64):
 		#print pp[x,y]
 print min(pp.flatten()), max(pp.flatten())
 imshow(pp)
-kk = real(ipfft(pft_mult(s0.pft, s1.pft), 64, 64))
-print min(kk.flatten()), max(kk.flatten())
-imshow(kk)
+obstacle.show_pp = True
 
-imsave("test1.png", pp)
-imsave("test2.png", kk) 
-'''
+#kk = real(ipfft(pft_mult(s0.pft, s1.pft), 64, 64))
+#print min(kk.flatten()), max(kk.flatten())
+#imshow(kk)
+
+#imsave("test1.png", pp)
+#imsave("test2.png", kk) 
+
 a = Body()
 a.pos = array([-20.,150.])
 a.shape = db.get_shape(1)
