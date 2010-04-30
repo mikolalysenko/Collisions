@@ -41,10 +41,6 @@ class RigidBodySystem:
 				B.force -= delta[:2]
 				B.torque -= delta[2]
 			A.force += self.gravity
-			print "Body attr: ", i
-			print A.force
-			print A.lin_velocity
-			print A.ang_velocity
 		
 		for (i, body) in enumerate(self.bodies):
 			S = body.shape

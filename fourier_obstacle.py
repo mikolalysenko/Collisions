@@ -6,9 +6,6 @@ from precalc_obstacle import diff_polar
 from polar import *
 from se2 import *
 
-pp = zeros((64,64,3))
-show_pp = False
-
 #All shapes are fixed at the resolution, SHAPE_R, for the sake of simplicity
 SHAPE_R = 256
 
@@ -57,8 +54,12 @@ class Shape:
 		self.shape_num = -1
 		
 		#Compute polar fourier truncation of indicator
-		self.pft  = pfft(cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1])), R)
-		self.pdft = pfft(diff_polar(cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1])), 1), R)
+		pind = cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1]))
+		self.pft  = pfft(pind, R)
+		dpolar = diff_polar(pind, 1)
+		imshow(dpolar)
+		self.pdft = pfft(dpolar, R)
+		imshow(ipfft(self.pdft, 512, 512))
 		self.R = R
 		
 		#Compute residual energy terms
@@ -107,93 +108,63 @@ class ShapeSet:
 	def num_shapes(self):
 		return len(self.shape_list)
 	
-	'''
-	def potential(self, s1, s2, pa, pb, ra, rb):
-		ca = se2(pa, ra)
-		cb = se2(pb, rb)
-		
-		rel = ca * cb.inv()
-		print rel
-		A = self.shape_list[s1]
-		B = self.shape_list[s2]
-		if(ceil(abs(rel.x[0])) >= A.radius + B.radius or ceil(abs(rel.x[1])) >= A.radius + B.radius ):
-			return 0.
-		
-		fa  = self.shape_list[s1].pft
-		fb  = self.shape_list[s2].pft
-		pr = norm(rel.x)
-		phi = atan2(-rel.x[0], -rel.x[1])
-		s_0	= fa[0][0] * fb[0][0] * pi
-		m = 2.j * pi / (2*SHAPE_R + 1)
-		for r in range(1, self.R):
-			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
-			v 	 =  conjugate(shift(fb[r], rel.theta * len(fb[r]) / (2. * pi))) * mult
-			s_0  += sum(v) * r * 2. * pi / (len(fb[r]))
-		return real( s_0 ) / ((2. * SHAPE_R + 1.)**2)
-	'''
 
+	'''
+	Gradient calculation for shape field
+	'''
 	def grad(self, s1, s2, pa, pb, ra, rb):
-		#if(s1 < s2):
-		#	print "flip"
-		#	return -self.grad(s2, s1, pb, pa, rb, ra)
-		
-		ca = se2(pa, ra)
-		cb = se2(pb, rb)
-		
-		rel = ca * cb.inv()
+		#Dereference shapes
 		A = self.shape_list[s1]
 		B = self.shape_list[s2]
-		if(ceil(abs(rel.x[0])) >= A.radius + B.radius or ceil(abs(rel.x[1])) >= A.radius + B.radius ):
+
+		#Compute relative transformation
+		ca = se2(pa, ra)
+		cb = se2(pb, rb)
+		rel = ca * cb.inv()
+		
+		if(max(abs(rel.x)) >= A.radius + B.radius ):
 			return array([0.,0.,0.])
 		
-		#print rel
+		#Load shape parameters
+		fa  = A.pft
+		fb  = B.pft
+		db  = B.pdft
+		ea 	= A.energy
+		eb 	= B.energy
+		cutoff = .01 * min(A.mass, B.mass) * (2. * SHAPE_R + 1) * (2. * SHAPE_R + 1)
 		
-		
-		fa  = self.shape_list[s1].pft
-		fb  = self.shape_list[s2].pft
-		db  = self.shape_list[s2].pdft
-		ea 	= self.shape_list[s1].energy
-		eb 	= self.shape_list[s2].energy
-		cutoff = 2. * self.shape_list[s1].total_energy * self.shape_list[s2].total_energy / (SHAPE_R * SHAPE_R)
-		
-		'''
-		if(show_pp ):
-			ix = array((rel.x * 64. / 512. + 32.).round() + 64, 'i') % 64
-			print ix
-			v = max(pp.flatten())			
-			if(pp[ix[0], ix[1], 0] < v):
-				print 'pp=', pp[ix[0], ix[1],:]
-				pp[ix[0], ix[1], :] = v
-				imshow(pp)
-		'''
-		
-		#print show_pp
-		pr  = norm(rel.x)
+		#Compute coordinate coefficients
+		m   = 2.j * pi / (sqrt(2.) * SHAPE_R) * norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
+		
+		#Set up initial sums
 		s_0	= fa[0][0] * fb[0][0] * pi
 		s_x = 0.
 		s_y = 0.
 		s_t = 0.
-		m   = 2.j * pi / (sqrt(2.) * SHAPE_R) * pr
-		for r in range(1, self.R):
-			mult =  fa[r] * exp((m * r) * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi) )
-			ss   =  rel.theta		#Shift factor
-			v 	 =  c_shift(fb[r], ss) * mult
-			h	 = 	r * 2. * pi / (len(fb[r]))
-			s_0  += sum(real(v)) * h
-			if(s_0 + ea[r] + eb[r] <= cutoff):
-				#print "early out",r,cutoff,s_0, ea[r], eb[r]
-				return array([0.,0.,0.])
-			s_x  += sum(real(v * 1.j * cos(arange(len(fb[r])) * 2. * pi / len(fb[r]))) ) * h
-			s_y  += -sum(real(v * 1.j * sin(arange(len(fb[r])) * 2. * pi / len(fb[r]))) ) * h
-			s_t	 += sum(real(c_shift(db[r], ss) * mult))   * h
 		
-		#print s_0, s_x, s_y, s_t
-		if(real(s_0) <= cutoff):
+		for r in range(1, self.R):
+		
+			#Compute theta terms
+			rscale = 2. * pi / len(fa[r])
+			theta  = arange(len(fa[r])) * rscale
+		
+			#Construct multiplier / v
+			mult =  fa[r] * exp((m * r) * cos(theta - phi)) * r * rscale
+			v 	 =  pds.shift(fb[r], rel.theta) * mult
+			
+			#Check for early out
+			s_0  += sum(real(v))
+			if(s_0 + min(ea[r], eb[r]) <= cutoff):
+				return array([0.,0.,0.])
+				
+			#Sum up gradient vectors
+			v    *= 1.j
+			s_x  += sum(real( v * cos(theta) ))
+			s_y  -= sum(real( v * sin(theta) ))
+			s_t	 += sum(real(pds.shift(db[r], rel.theta) * mult))
+		
+		if(s_0 <= cutoff):
 			return array([0., 0., 0.])
-
-		g = array([real(s_x), real(s_y), real(s_t)])
-
-		print "HIT: ", rel, g
-		return g		
+		return array([s_x, s_y, s_t])
 

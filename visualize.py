@@ -82,7 +82,7 @@ class Visualization:
 		glEnable(GL_TEXTURE_RECTANGLE_ARB)		
 		for b in self.system.bodies:
 			S = b.shape
-			W = S.indicator.shape[0]
+			W = S.indicator.shape[1]
 			H = S.indicator.shape[0]
 			
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[S.shape_num])
