@@ -48,7 +48,7 @@ s1 = db.get_shape(1)
 for x in range(64):
 	for y in range(64):
 		print x,y
-		pp[x,y,:] = db.grad(1, 0, 8. * array([x,y],'f') - array([256., 256.]), array([0.,0.]), 0., 0.)
+		pp[x,y,:] = db.grad(1, 0, 8. * array([x,y],'f') - array([256., 256.]), array([0.,0.]), pi/2., 0.)
 		print pp[x,y,:]
 		#p = (array([x,y], 'f') - 32)
 		#r = norm(p)
@@ -67,13 +67,14 @@ obstacle.show_pp = True
 #imsave("test2.png", kk) 
 
 a = Body()
-a.pos = array([-20.,100.])
+a.pos = array([-5.,100.])
 a.shape = db.get_shape(1)
 a.lin_velocity = array([0., -10.])
 a.ang_velocity = 0.0
 
 b = Body()
 b.pos = array([0.,0.])
+b.rot = pi / 2.
 b.shape = db.get_shape(0)
 b.lin_velocity = array([0., 0.])
 b.ang_velocity = 0.

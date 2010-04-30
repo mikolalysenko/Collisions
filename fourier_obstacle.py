@@ -146,7 +146,7 @@ class ShapeSet:
 		if(ceil(abs(rel.x[0])) >= A.radius + B.radius or ceil(abs(rel.x[1])) >= A.radius + B.radius ):
 			return array([0.,0.,0.])
 		
-		print rel
+		#print rel
 		
 		
 		fa  = self.shape_list[s1].pft
@@ -154,8 +154,9 @@ class ShapeSet:
 		db  = self.shape_list[s2].pdft
 		ea 	= self.shape_list[s1].energy
 		eb 	= self.shape_list[s2].energy
-		cutoff = .5 * self.shape_list[s1].total_energy * self.shape_list[s2].total_energy / (SHAPE_R * SHAPE_R)
+		cutoff = 2. * self.shape_list[s1].total_energy * self.shape_list[s2].total_energy / (SHAPE_R * SHAPE_R)
 		
+		'''
 		if(show_pp ):
 			ix = array((rel.x * 64. / 512. + 32.).round() + 64, 'i') % 64
 			print ix
@@ -164,9 +165,9 @@ class ShapeSet:
 				print 'pp=', pp[ix[0], ix[1],:]
 				pp[ix[0], ix[1], :] = v
 				imshow(pp)
-
+		'''
 		
-		print show_pp
+		#print show_pp
 		pr  = norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
 		s_0	= fa[0][0] * fb[0][0] * pi
@@ -176,15 +177,15 @@ class ShapeSet:
 		m   = 2.j * pi / (sqrt(2.) * SHAPE_R) * pr
 		for r in range(1, self.R):
 			mult =  fa[r] * exp((m * r) * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi) )
-			ss   =  0.		#Shift factor
+			ss   =  rel.theta		#Shift factor
 			v 	 =  c_shift(fb[r], ss) * mult
 			h	 = 	r * 2. * pi / (len(fb[r]))
 			s_0  += sum(real(v)) * h
 			if(s_0 + ea[r] + eb[r] <= cutoff):
-				print "early out",r,cutoff,s_0, ea[r], eb[r]
+				#print "early out",r,cutoff,s_0, ea[r], eb[r]
 				return array([0.,0.,0.])
 			s_x  += sum(real(v * 1.j * cos(arange(len(fb[r])) * 2. * pi / len(fb[r]))) ) * h
-			s_y  += sum(real(v * 1.j * sin(arange(len(fb[r])) * 2. * pi / len(fb[r]))) ) * h
+			s_y  += -sum(real(v * 1.j * sin(arange(len(fb[r])) * 2. * pi / len(fb[r]))) ) * h
 			s_t	 += sum(real(c_shift(db[r], ss) * mult))   * h
 		
 		#print s_0, s_x, s_y, s_t

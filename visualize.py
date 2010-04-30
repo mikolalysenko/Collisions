@@ -116,7 +116,7 @@ class Visualization:
 	def loop(self):
 		while(self.running):
 			self.do_events()
-			self.system.integrate(0.0001)
+			self.system.integrate(0.001)
 			self.draw()
 			
 
