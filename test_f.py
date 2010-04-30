@@ -67,7 +67,7 @@ obstacle.show_pp = True
 #imsave("test2.png", kk) 
 
 a = Body()
-a.pos = array([-20.,150.])
+a.pos = array([-20.,100.])
 a.shape = db.get_shape(1)
 a.lin_velocity = array([0., -10.])
 a.ang_velocity = 0.0

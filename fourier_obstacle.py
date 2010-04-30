@@ -156,6 +156,16 @@ class ShapeSet:
 		eb 	= self.shape_list[s2].energy
 		cutoff = .5 * self.shape_list[s1].total_energy * self.shape_list[s2].total_energy / (SHAPE_R * SHAPE_R)
 		
+		if(show_pp ):
+			ix = array((rel.x * 64. / 512. + 32.).round() + 64, 'i') % 64
+			print ix
+			v = max(pp.flatten())			
+			if(pp[ix[0], ix[1], 0] < v):
+				print 'pp=', pp[ix[0], ix[1],:]
+				pp[ix[0], ix[1], :] = v
+				imshow(pp)
+
+		
 		print show_pp
 		pr  = norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
@@ -163,9 +173,9 @@ class ShapeSet:
 		s_x = 0.
 		s_y = 0.
 		s_t = 0.
-		m   = pi / SHAPE_R
+		m   = 2.j * pi / (sqrt(2.) * SHAPE_R) * pr
 		for r in range(1, self.R):
-			mult =  fa[r] * exp(m * pr * r * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi))
+			mult =  fa[r] * exp((m * r) * cos(arange(len(fa[r])) * 2. * pi / len(fa[r]) - phi) )
 			ss   =  0.		#Shift factor
 			v 	 =  c_shift(fb[r], ss) * mult
 			h	 = 	r * 2. * pi / (len(fb[r]))
@@ -182,13 +192,6 @@ class ShapeSet:
 			return array([0., 0., 0.])
 
 		g = array([real(s_x), real(s_y), real(s_t)])
-				
-		if(show_pp):
-			ix = array((rel.x * 64. / 512. + 32.).round() + 64, 'i') % 64
-			print ix
-			print 'g=', g, 'pp=', pp[ix[0], ix[1],:]
-			pp[ix[0], ix[1], :] = max(pp.flatten())
-			imshow(pp)
 
 		print "HIT: ", rel, g
 		return g		
