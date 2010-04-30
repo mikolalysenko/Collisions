@@ -55,11 +55,10 @@ class Shape:
 		
 		#Compute polar fourier truncation of indicator
 		pind = cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1]))
-		self.pft  = pfft(pind, R)
-		dpolar = diff_polar(pind, 1)
-		imshow(dpolar)
-		self.pdft = pfft(dpolar, R)
-		imshow(ipfft(self.pdft, 512, 512))
+		pft = pfft(pind, R)
+		for r in range(R):
+			pft[r] = fft(pft[r])
+		self.pft  = pft
 		self.R = R
 		
 		#Compute residual energy terms
@@ -71,9 +70,6 @@ class Shape:
 		self.total_energy = s
 		for r,e in enumerate(self.energy):
 			self.energy[r] = self.total_energy - self.energy[r]
-
-def c_shift(a, s):
-	return pds.shift(a, s)
 
 '''
 The shape/obstacle data base
@@ -108,6 +104,48 @@ class ShapeSet:
 	def num_shapes(self):
 		return len(self.shape_list)
 	
+	
+
+	'''
+	Gradient calculation for shape field
+	'''
+	def potential(self, s1, s2, pa, pb, ra, rb):
+		#Dereference shapes
+		A = self.shape_list[s1]
+		B = self.shape_list[s2]
+
+		#Compute relative transformation
+		ca = se2(pa, ra)
+		cb = se2(pb, rb)
+		rel = ca * cb.inv()
+		
+		#Load shape parameters
+		fa  = A.pft
+		fb  = B.pft
+		ea 	= A.energy
+		eb 	= B.energy
+		
+		#Compute coordinate coefficients
+		m   = 2.j * pi / (sqrt(2.) * SHAPE_R) * norm(rel.x)
+		phi = atan2(rel.x[0], rel.x[1])
+		
+		#Set up initial sums
+		s_0	= fa[0][0] * fb[0][0] * pi
+		
+		for r in range(1, self.R):
+		
+			#Compute theta terms
+			rscale = 2. * pi / len(fa[r])
+			theta  = arange(len(fa[r])) * rscale
+		
+			#Construct multiplier / v
+			v =  fa[r] * fb[r] * exp((m * r) * cos(theta - phi) + 1.j * theta * rel.theta) * r * rscale / len(fa[r])
+			
+			#Check for early out
+			s_0  += sum(real(v))
+		
+		return s_0
+
 
 	'''
 	Gradient calculation for shape field
@@ -128,7 +166,6 @@ class ShapeSet:
 		#Load shape parameters
 		fa  = A.pft
 		fb  = B.pft
-		db  = B.pdft
 		ea 	= A.energy
 		eb 	= B.energy
 		cutoff = .01 * min(A.mass, B.mass) * (2. * SHAPE_R + 1) * (2. * SHAPE_R + 1)
@@ -150,19 +187,18 @@ class ShapeSet:
 			theta  = arange(len(fa[r])) * rscale
 		
 			#Construct multiplier / v
-			mult =  fa[r] * exp((m * r) * cos(theta - phi)) * r * rscale
-			v 	 =  pds.shift(fb[r], rel.theta) * mult
+			v =  fa[r] * fb[r] * exp((m * r) * cos(theta - phi) + 2.j * theta * rel.theta) * r * rscale / len(fa[r])
 			
 			#Check for early out
 			s_0  += sum(real(v))
-			if(s_0 + min(ea[r], eb[r]) <= cutoff):
-				return array([0.,0.,0.])
+			#if(s_0 + min(ea[r], eb[r]) <= cutoff):
+				#return array([0.,0.,0.])
 				
 			#Sum up gradient vectors
 			v    *= 1.j
 			s_x  += sum(real( v * cos(theta) ))
 			s_y  -= sum(real( v * sin(theta) ))
-			s_t	 += sum(real(pds.shift(db[r], rel.theta) * mult))
+			s_t	 += sum(real( v * theta ))
 		
 		if(s_0 <= cutoff):
 			return array([0., 0., 0.])

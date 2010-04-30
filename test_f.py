@@ -32,19 +32,19 @@ else:
 
 print "here"
 
-pp = zeros((64,64,3))
+pp = zeros((64,64))
 for x in range(64):
 	for y in range(64):
 		print x,y
-		pp[x,y,:] = db.grad(4, 3, 8. * array([x,y],'f') - array([256., 256.]), array([0.,0.]), pi/2., 0.)
-		print pp[x,y,:]
+		pp[x,y] = db.potential(3, 2, 8. * array([x,y],'f') - array([256., 256.]), array([0.,0.]), 0., 0.)
+		print pp[x,y]
 		#p = (array([x,y], 'f') - 32)
 		#r = norm(p)
 		#t = atan2(p[0], p[1])
 		#pp[x,y] = eval_pft(s0.pft, r, t)
 		#print pp[x,y]
 print min(pp.flatten()), max(pp.flatten())
-imshow(pp[:,:,2])
+imshow(pp)
 
 a = Body()
 a.pos = array([10.,100.])
