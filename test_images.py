@@ -33,9 +33,15 @@ for i in range(513):
 	for j in range(513):
 		x = 257. - i
 		y = 257. - j
-		sconv[i, j] = db.potential(A, B, array([0., 0.]), array([x, y]), 0., 0.)
+		sconv[i, j] = db.potential(A, B, array([0., 0.]), array([x, y]), 0., pi/6.)
 		print x,y, sconv[i,j]
 		
 imsave("test2.png", sconv)
 imshow(sconv)
+
+dobst = abs(pconv - sconv)
+imsave("diff.png", dobst)
+imshow(dobst)
+
+print "total error: ", sum(dobst.flatten())
 

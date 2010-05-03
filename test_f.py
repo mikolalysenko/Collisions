@@ -15,38 +15,30 @@ import polar as polar
 import os
 import pickle
 
-if(os.path.exists("db.pkl")):
-	inp = open("db.pkl", "rb")
-	db = pickle.load(inp)
-	inp.close()
-else:
-	db = obstacle.ShapeSet(32, 256)
-	db.add_shape(load_img("shape1.png"))
-	db.add_shape(load_img("shape2.png"))
-	db.add_shape(load_img("shape3.png"))
-	db.add_shape(load_img("shape4.png"))
-	db.add_shape(load_img("shape5.png"))
-	outp = open("db.pkl", "wb")
-	pickle.dump(db, outp)
-	outp.close()
+db = obstacle.ShapeSet(32, 256)
+db.add_shape(load_img("shape1.png"))
+db.add_shape(load_img("shape2.png"))
+db.add_shape(load_img("shape3.png"))
+db.add_shape(load_img("shape4.png"))
+db.add_shape(load_img("shape5.png"))
 
 a = Body()
-a.pos = array([30.,100.])
-a.rot = pi/4.
-a.shape = db.shape_list[3]
+a.pos = array([-40.,100.])
+a.rot = -pi/2.
+a.shape = db.shape_list[4]
 a.lin_velocity = array([0., -40.])
 a.ang_velocity = 0.0
 
 b = Body()
 b.pos = array([0.,0.])
-b.rot = pi / 2.
+b.rot = 0.
 b.shape = db.shape_list[4]
 b.lin_velocity = array([0., 0.])
 b.ang_velocity = 0.
 
 s = RigidBodySystem(db)
-s.add_body(a)
 s.add_body(b)
+s.add_body(a)
 
 V = Visualization(s)
 V.loop()

@@ -101,7 +101,7 @@ class ShapeSet:
 	Returns the cutoff threshold for shapes A,B
 	'''
 	def __get_cutoff(self, A, B):
-		return 0.01 * min(A.area, B.area) * ((2. * self.SHAPE_R + 1) ** 2)
+		return 0.02 * min(A.area, B.area) * ((2. * self.SHAPE_R + 1) ** 2)
 		
 	'''
 	Evaluates shape potential field
@@ -110,9 +110,10 @@ class ShapeSet:
 		#Compute relative transformation
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
-		rel = ca * cb.inv()
+		rel = ca.inv() * cb
+		pr = norm(rel.x)
 		
-		if(norm(rel.x) >= A.radius + B.radius ):
+		if(pr >= A.radius + B.radius ):
 			return 0.
 		
 		#Load shape parameters
@@ -123,9 +124,9 @@ class ShapeSet:
 		cutoff = self.__get_cutoff(A,B)
 		
 		#Compute coordinate coefficients
-		m   = 2.j * pi / (2. * self.SHAPE_R + 1) * norm(rel.x)
-		phi = atan2(rel.x[0], rel.x[1])
-		
+		m   = 2.j * pi / (2. * self.SHAPE_R + 1) * pr
+		phi = atan2(rel.x[1], rel.x[0])
+				
 		#Sum up energy contributions
 		s_0	= real(fa[0][0] * fb[0][0] * pi)
 		
@@ -135,7 +136,7 @@ class ShapeSet:
 			theta  = arange(len(fa[r])) * rscale
 		
 			#Compute energy at this ring
-			v =  pds.shift(fb[r], rel.theta) * fa[r] * exp((m * r) * cos(theta - phi)) * r * rscale
+			v =  pds.shift(fb[r], rel.theta) * fa[r] * exp((m * r) * cos(theta + phi)) * r * rscale
 			
 			#Check for early out
 			s_0  += sum(real(v))
@@ -158,8 +159,9 @@ class ShapeSet:
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
 		rel = ca.inv() * cb
+		pr = norm(rel.x)
 		
-		if(norm(rel.x) >= A.radius + B.radius ):
+		if(pr >= A.radius + B.radius ):
 			return array([0., 0., 0., 0.])
 		
 		#Load shape parameters
@@ -174,8 +176,8 @@ class ShapeSet:
 		cutoff = self.__get_cutoff(A, B)
 		
 		#Compute coordinate coefficients
-		m   = 2.j * pi / (2. * self.SHAPE_R + 1) * norm(rel.x)
-		phi = atan2(rel.x[0], rel.x[1])
+		m   = 2.j * pi / (2. * self.SHAPE_R + 1) * pr
+		phi = atan2(rel.x[1], rel.x[0])
 		
 		#Set up initial sums
 		s_0	 = real(fa[0][0] * fb[0][0] * pi)
@@ -191,8 +193,8 @@ class ShapeSet:
 			theta  = arange(len(fa[r])) * rscale
 		
 			#Construct multiplier / v
-			mult = exp((m * r) * cos(theta - phi)) * r * rscale
-			u 	 = pds.shift(fb[r], rel.theta) * mult
+			mult = exp((m * r) * cos(theta + phi)) * r * rscale
+			u 	 = pds.shift(conjugate(fb[r]), rel.theta) * mult
 			v 	 = fa[r] * u
 			
 			#Check for early out
@@ -203,11 +205,11 @@ class ShapeSet:
 			#Sum up gradient vectors
 			v    *= 1.j
 			s_x  += sum(real( v * cos(theta) ))
-			s_y  += sum(real( v * sin(theta) ))
-			s_ta += r * sum(real(da[r] * u))
-			s_tb += r * sum(real(pds.shift(db[r], rel.theta) * fa[r] * mult))
+			s_y  -= sum(real( v * sin(theta) ))
+			s_ta += sum(real(da[r] * u))
+			s_tb += sum(real(pds.shift(conjugate(db[r]), rel.theta) * fa[r] * mult))
 		
 		if(s_0 <= cutoff):
 			return array([0., 0., 0., 0.])
-		return array([s_x, s_y, s_ta, s_tb, s_0])
+		return array([s_x, s_y, s_ta, s_tb])
 

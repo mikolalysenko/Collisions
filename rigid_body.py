@@ -54,13 +54,13 @@ class RigidBodySystem:
 		for (i, A) in enumerate(self.bodies):
 			for j in range(i):
 				B = self.bodies[j]
-				delta = self.shape_db.grad(A.shape, B.shape, A.v_pos, B.v_pos, A.v_rot, B.v_rot)
+				delta = self.shape_db.grad(A.shape, B.shape, A.v_pos, B.v_pos, A.v_rot, B.v_rot) * 100.
 				if(abs(delta[0]) > 1):
 					print i, j, delta
-				A.force  -= delta[:2]
-				A.torque += delta[2]
-				B.force  += delta[:2]
-				B.torque += delta[3]
+				A.force  += delta[:2]
+				A.torque -= delta[2]
+				B.force  -= delta[:2]
+				B.torque -= delta[3]
 			A.force += self.gravity * A.shape.mass
 		
 		#Apply forces and clear accumulators
