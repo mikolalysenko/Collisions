@@ -157,14 +157,15 @@ class ShapeSet:
 		#Compute relative transformation
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
-		rel = ca * cb.inv()
+		rel = ca.inv() * cb
 		
 		if(norm(rel.x) >= A.radius + B.radius ):
-			return array([0.,0.,0.])
+			return array([0., 0., 0., 0.])
 		
 		#Load shape parameters
 		fa  = A.pft
 		fb  = B.pft
+		da  = A.pdft
 		db  = B.pdft
 		ea 	= A.energy
 		eb 	= B.energy
@@ -177,10 +178,11 @@ class ShapeSet:
 		phi = atan2(rel.x[0], rel.x[1])
 		
 		#Set up initial sums
-		s_0	= real(fa[0][0] * fb[0][0] * pi)
-		s_x = 0.
-		s_y = 0.
-		s_t = 0.
+		s_0	 = real(fa[0][0] * fb[0][0] * pi)
+		s_x  = 0.
+		s_y  = 0.
+		s_ta = 0.
+		s_tb = 0.
 		
 		for r in range(1, self.R):
 		
@@ -189,21 +191,23 @@ class ShapeSet:
 			theta  = arange(len(fa[r])) * rscale
 		
 			#Construct multiplier / v
-			mult =  fa[r] * exp((m * r) * cos(theta - phi)) * r * rscale
-			v 	 =  pds.shift(fb[r], rel.theta) * mult
+			mult = exp((m * r) * cos(theta - phi)) * r * rscale
+			u 	 = pds.shift(fb[r], rel.theta) * mult
+			v 	 = fa[r] * u
 			
 			#Check for early out
 			s_0  += sum(real(v))
 			if(s_0 + min(ea[r], eb[r]) <= cutoff):
-				return array([0.,0.,0.])
+				return array([0.,0.,0.,0.])
 				
 			#Sum up gradient vectors
 			v    *= 1.j
 			s_x  += sum(real( v * cos(theta) ))
-			s_y  -= sum(real( v * sin(theta) ))
-			s_t	 -= r * sum(real(pds.shift(db[r], rel.theta) * mult))
+			s_y  += sum(real( v * sin(theta) ))
+			s_ta += r * sum(real(da[r] * u))
+			s_tb += r * sum(real(pds.shift(db[r], rel.theta) * fa[r] * mult))
 		
 		if(s_0 <= cutoff):
-			return array([0., 0., 0.])
-		return array([s_x, s_y, s_t])
+			return array([0., 0., 0., 0.])
+		return array([s_x, s_y, s_ta, s_tb, s_0])
 
