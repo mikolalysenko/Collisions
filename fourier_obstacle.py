@@ -1,29 +1,27 @@
-from scipy import array, exp, pi, sin, cos, arange, conjugate
+'''
+Fourier obstacle for collision detection
+
+'''
+from scipy import array, exp, pi, sin, cos, arange, conjugate, real, sqrt
+from math import atan2
+from numpy import ndenumerate, dot
+from scipy.linalg import norm
+
 import scipy.ndimage as ndi
-from scipy.misc import imshow
-import scipy.fftpack.pseudo_diffs as pds;
-from precalc_obstacle import diff_polar
-from polar import *
-from se2 import *
+import scipy.fftpack.pseudo_diffs as pds
 
-#All shapes are fixed at the resolution, SHAPE_R, for the sake of simplicity
-SHAPE_R = 256
-
-'''
-Pads/centers an image
-'''
-def cpad(f, ns):
-	res = zeros((ns[0],ns[1]));
-	c0 = array((ns / 2. - array(f.shape)/2.).round(), dtype('int'));
-	c1 = c0 + array(f.shape, dtype('int'));
-	res[c0[0]:c1[0], c0[1]:c1[1]] = f;
-	return res;
+from misc import *
+from polar import pfft
+from se2 import se2
 
 '''
 Shape storage class
 '''
 class Shape:
-	def __init__(self, mass_field, R):
+	'''
+	Initializes a shape object
+	'''
+	def __init__(self, mass_field, R, SHAPE_R):
 		
 		self.mass_field = mass_field
 		self.mass = sum(mass_field.flatten())
@@ -39,9 +37,11 @@ class Shape:
 		assert(self.mass_field.shape[0] <= SHAPE_R)
 		assert(self.mass_field.shape[1] <= SHAPE_R)
 		
-		self.indicator = array(self.mass_field > 0.01, 'f')
+		#Set indicator/shape area
+		self.indicator = to_ind(self.mass_field, 0.01)
+		self.area = sum(self.indicator.flatten())
 		
-		#Compute moment of inertia
+		#Compute moment of inertia and radius
 		self.moment = 0.
 		self.radius = 0.
 		for x,p in ndenumerate(self.mass_field):
@@ -49,8 +49,8 @@ class Shape:
 			self.moment += p * dot(r,r)
 			if(p > 0.01):
 				self.radius = max(self.radius, norm(r))
-				
-		print self.radius
+		
+		#Set shape indicator
 		self.shape_num = -1
 		
 		#Compute polar fourier truncation of indicator
@@ -69,51 +69,92 @@ class Shape:
 		for r,e in enumerate(self.energy):
 			self.energy[r] = self.total_energy - self.energy[r]
 
-def c_shift(a, s):
-	return pds.shift(a, s)
-
 '''
 The shape/obstacle data base
 '''
 class ShapeSet:
-	def __init__(self, R):
+
+	'''
+	Initializes the shape database
+	'''
+	def __init__(self, R, SHAPE_R):
 		self.shape_list = []
 		self.R = R
+		self.SHAPE_R = SHAPE_R
 
 	'''
 	Adds a shape to the obstacle set
 	'''
 	def add_shape(self, f):
 		#Create shape
-		S = Shape(f, self.R)
+		S = Shape(f, self.R, self.SHAPE_R)
 	
 		#Add to shape list
 		S.shape_num = len(self.shape_list)
 		self.shape_list.append(S)
 
 		return S
-	
-	'''
-	Retrieves a shape with the given index
-	'''
-	def get_shape(self, idx):
-		return self.shape_list[idx]
-	
-	def get_shapes(self):
-		return self.shape_list
 
-	def num_shapes(self):
-		return len(self.shape_list)
 	
+	'''
+	Returns the cutoff threshold for shapes A,B
+	'''
+	def __get_cutoff(self, A, B):
+		return .01 * min(A.area, B.area) * ((2. * self.SHAPE_R + 1) ** 2)
+		
+	'''
+	Evaluates shape potential field
+	'''
+	'''
+	def potential(self, A, B, pa, pb, ra, rb):
+		#Compute relative transformation
+		ca = se2(pa, ra)
+		cb = se2(pb, rb)
+		rel = ca * cb.inv()
+		
+		if(max(abs(rel.x)) >= A.radius + B.radius ):
+			return 0.
+		
+		#Load shape parameters
+		fa  = A.pft
+		fb  = B.pft
+		ea 	= A.energy
+		eb 	= B.energy
+		cutoff = self.__get_cutoff(A,B)
+		
+		#Compute coordinate coefficients
+		m   = 2.j * pi / self.SHAPE_R * norm(rel.x)
+		phi = atan2(rel.x[0], rel.x[1])
+		
+		#Sum up energy contributions
+		s_0	= real(fa[0][0] * fb[0][0] * pi)
+		
+		for r in range(1, self.R):
+			#Compute theta terms
+			rscale = 2. * pi / len(fa[r])
+			theta  = arange(len(fa[r])) * rscale
+		
+			#Compute energy at this ring
+			v =  pds.shift(fb[r], rel.theta) * fa[r] * exp((m * r) * cos(theta - phi)) * r * rscale
+			
+			#Check for early out
+			s_0  += sum(real(v))
+			if(s_0 + min(ea[r], eb[r]) <= cutoff):
+				return 0.
+		
+		if(s_0 <= cutoff):
+			return 0.
+		return 0.
+	'''
 
 	'''
 	Gradient calculation for shape field
+	
+	A,  B  - Shapes for the solids
+	pa, pb - Positions for shapes
+	ra, rb - Rotations for shapes
 	'''
-	def grad(self, s1, s2, pa, pb, ra, rb):
-		#Dereference shapes
-		A = self.shape_list[s1]
-		B = self.shape_list[s2]
-
+	def grad(self, A, B, pa, pb, ra, rb):
 		#Compute relative transformation
 		ca = se2(pa, ra)
 		cb = se2(pb, rb)
@@ -128,14 +169,16 @@ class ShapeSet:
 		db  = B.pdft
 		ea 	= A.energy
 		eb 	= B.energy
-		cutoff = .01 * min(A.mass, B.mass) * (2. * SHAPE_R + 1) * (2. * SHAPE_R + 1)
+		
+		#Estimate cutoff threshold
+		cutoff = self.__get_cutoff(A, B)
 		
 		#Compute coordinate coefficients
-		m   = 2.j * pi / (sqrt(2.) * SHAPE_R) * norm(rel.x)
+		m   = 2.j * pi / (sqrt(2.) self.SHAPE_R) * norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
 		
 		#Set up initial sums
-		s_0	= fa[0][0] * fb[0][0] * pi
+		s_0	= real(fa[0][0] * fb[0][0] * pi)
 		s_x = 0.
 		s_y = 0.
 		s_t = 0.
