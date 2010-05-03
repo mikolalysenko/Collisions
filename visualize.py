@@ -3,17 +3,11 @@ A simple visualization template for rendering the results of the physics simulat
 
 -Mikola
 '''
-from scipy import array, zeros
-from numpy import *
-from ctypes import *
+from scipy import array, zeros, dtype, arange, pi
 import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import obstacle
-import rigid_body
-import scipy.misc
-from misc import *
 
 '''
 The visualization system

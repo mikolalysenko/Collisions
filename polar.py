@@ -5,7 +5,6 @@ This code is filled with some basic methods for dealing with polar fourier trans
 
 -Mikola
 '''
-
 from math import atan2, pi, floor, tan
 from scipy import conjugate, real, array, dtype, zeros, concatenate, arange, ones, exp, cos, sin, sqrt
 from scipy.linalg.basic import norm

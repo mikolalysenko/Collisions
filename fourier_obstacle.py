@@ -1,6 +1,7 @@
 '''
 Fourier obstacle for collision detection
 
+-Mikola
 '''
 from scipy import array, exp, pi, sin, cos, arange, conjugate, real, sqrt
 from math import atan2
@@ -10,7 +11,7 @@ from scipy.linalg import norm
 import scipy.ndimage as ndi
 import scipy.fftpack.pseudo_diffs as pds
 
-from misc import *
+from misc import to_ind, cpad
 from polar import pfft
 from se2 import se2
 
@@ -100,11 +101,10 @@ class ShapeSet:
 	Returns the cutoff threshold for shapes A,B
 	'''
 	def __get_cutoff(self, A, B):
-		return .01 * min(A.area, B.area) * ((2. * self.SHAPE_R + 1) ** 2)
+		return 0.01 * min(A.area, B.area) * ((2. * self.SHAPE_R + 1) ** 2)
 		
 	'''
 	Evaluates shape potential field
-	'''
 	'''
 	def potential(self, A, B, pa, pb, ra, rb):
 		#Compute relative transformation
@@ -112,7 +112,7 @@ class ShapeSet:
 		cb = se2(pb, rb)
 		rel = ca * cb.inv()
 		
-		if(max(abs(rel.x)) >= A.radius + B.radius ):
+		if(norm(rel.x) >= A.radius + B.radius ):
 			return 0.
 		
 		#Load shape parameters
@@ -123,7 +123,7 @@ class ShapeSet:
 		cutoff = self.__get_cutoff(A,B)
 		
 		#Compute coordinate coefficients
-		m   = 2.j * pi / self.SHAPE_R * norm(rel.x)
+		m   = 2.j * pi / (2. * self.SHAPE_R + 1) * norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
 		
 		#Sum up energy contributions
@@ -144,8 +144,7 @@ class ShapeSet:
 		
 		if(s_0 <= cutoff):
 			return 0.
-		return 0.
-	'''
+		return s_0
 
 	'''
 	Gradient calculation for shape field
@@ -160,7 +159,7 @@ class ShapeSet:
 		cb = se2(pb, rb)
 		rel = ca * cb.inv()
 		
-		if(max(abs(rel.x)) >= A.radius + B.radius ):
+		if(norm(rel.x) >= A.radius + B.radius ):
 			return array([0.,0.,0.])
 		
 		#Load shape parameters
@@ -174,7 +173,7 @@ class ShapeSet:
 		cutoff = self.__get_cutoff(A, B)
 		
 		#Compute coordinate coefficients
-		m   = 2.j * pi / self.SHAPE_R * norm(rel.x)
+		m   = 2.j * pi / (2. * self.SHAPE_R + 1) * norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
 		
 		#Set up initial sums
