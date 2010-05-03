@@ -33,7 +33,7 @@ class RigidBodySystem:
 		for (i, A) in enumerate(self.bodies):
 			for j in range(i):
 				B = self.bodies[j]
-				delta = self.shape_db.grad(A.shape.shape_num, B.shape.shape_num, A.v_pos, B.v_pos, A.v_rot, B.v_rot) * 0.1
+				delta = self.shape_db.grad(A.shape.shape_num, B.shape.shape_num, A.v_pos, B.v_pos, A.v_rot, B.v_rot)
 				if(abs(delta[0]) > 1):
 					print i, j, delta
 				A.force += delta[:2]

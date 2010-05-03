@@ -56,10 +56,7 @@ class Shape:
 		#Compute polar fourier truncation of indicator
 		pind = cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1]))
 		self.pft  = pfft(pind, R)
-		dpolar = diff_polar(pind, 1)
-		imshow(dpolar)
-		self.pdft = pfft(dpolar, R)
-		imshow(ipfft(self.pdft, 512, 512))
+		self.pdft = map(pds.diff, self.pft)
 		self.R = R
 		
 		#Compute residual energy terms
@@ -162,7 +159,7 @@ class ShapeSet:
 			v    *= 1.j
 			s_x  += sum(real( v * cos(theta) ))
 			s_y  -= sum(real( v * sin(theta) ))
-			s_t	 += sum(real(pds.shift(db[r], rel.theta) * mult))
+			s_t	 -= r * sum(real(pds.shift(db[r], rel.theta) * mult))
 		
 		if(s_0 <= cutoff):
 			return array([0., 0., 0.])

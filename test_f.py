@@ -29,7 +29,7 @@ else:
 	outp = open("db.pkl", "wb")
 	pickle.dump(db, outp)
 	outp.close()
-
+'''
 print "here"
 
 pp = zeros((64,64,3))
@@ -45,9 +45,10 @@ for x in range(64):
 		#print pp[x,y]
 print min(pp.flatten()), max(pp.flatten())
 imshow(pp[:,:,2])
+'''
 
 a = Body()
-a.pos = array([10.,100.])
+a.pos = array([20.,100.])
 a.shape = db.get_shape(3)
 a.lin_velocity = array([0., -40.])
 a.ang_velocity = 0.0
