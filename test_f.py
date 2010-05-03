@@ -32,6 +32,7 @@ else:
 
 a = Body()
 a.pos = array([30.,100.])
+a.rot = pi/4.
 a.shape = db.shape_list[3]
 a.lin_velocity = array([0., -40.])
 a.ang_velocity = 0.0
