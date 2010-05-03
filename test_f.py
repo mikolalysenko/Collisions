@@ -11,6 +11,7 @@ from visualize import *
 from misc import *
 
 import fourier_obstacle as obstacle
+import polar as polar
 import os
 import pickle
 

@@ -294,6 +294,8 @@ def pfft(f, nR = -1):
 Computes the ivnerse polar Fourier transform of pft onto the xs by ys grid.
 '''
 def ipfft(pft, xs, ys):
+	if(xs > 2 * len(pft) + 1 and ys > 2 * len(pft) + 1):
+		return fftshift(real(ifft2(fftshift(polar2rect(pft, xs, ys)))))
 	t = fftshift(real(ifft2(fftshift(polar2rect(pft, 2*len(pft)+1, 2*len(pft)+1)))))
 	tx = len(pft) - xs / 2
 	ty = len(pft) - ys / 2

@@ -14,7 +14,6 @@ def cpad(f, ns):
 	print res
 	c0 = array((ns / 2. - array(f.shape)/2.).round(), 'i')
 	c1 = c0 + array(f.shape, 'i')
-	print c0, c1
 	res[c0[0]:c1[0], c0[1]:c1[1]] = f
 	return res
 	

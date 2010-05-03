@@ -174,7 +174,7 @@ class ShapeSet:
 		cutoff = self.__get_cutoff(A, B)
 		
 		#Compute coordinate coefficients
-		m   = 2.j * pi / (sqrt(2.) self.SHAPE_R) * norm(rel.x)
+		m   = 2.j * pi / self.SHAPE_R * norm(rel.x)
 		phi = atan2(rel.x[0], rel.x[1])
 		
 		#Set up initial sums
