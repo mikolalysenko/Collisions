@@ -204,8 +204,8 @@ class ShapeSet:
 				
 			#Sum up gradient vectors
 			v    *= 1.j
-			s_x  += sum(real( v * cos(theta) ))
-			s_y  -= sum(real( v * sin(theta) ))
+			s_x  -= sum(real( v * sin(theta + phi) ))
+			s_y  -= sum(real( v * cos(theta + phi) ))
 			s_ta += sum(real(da[r] * u))
 			s_tb += sum(real(pds.shift(conjugate(db[r]), rel.theta) * fa[r] * mult))
 		
