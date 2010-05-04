@@ -7,17 +7,51 @@ from scipy import array, exp, pi, sin, cos, arange, conjugate, real, sqrt, zeros
 from math import atan2
 from numpy import ndenumerate, dot
 from scipy.linalg import norm
-from scipy.misc import imshow
+from scipy.misc import imshow, imrotate
+from scipy.signal import fftconvolve
 
 import scipy.ndimage as ndi
 import scipy.fftpack.pseudo_diffs as pds
 
 
 from misc import to_ind, cpad
-from polar import pfft, ipfft
+from polar import pfft, ipfft, pft_mult, pft_rotate
 from se2 import se2
 
 
+
+'''
+Computes the best cutoff for the given indicator function
+'''
+def best_cutoff(ift, pind, radius):
+	pvalues = []
+	for x,v in ndenumerate(ift):
+		if(norm(array(x) - array(pind.shape) / 2.) <= radius):
+			pvalues.append( (v, pind[x[0], x[1]]) )
+	pvalues.sort()
+
+	lmiss = zeros((len(pvalues)))
+	umiss = zeros((len(pvalues)))
+	
+	l = 0
+	u = 0
+	for k in range(len(pvalues)):
+		if(pvalues[len(pvalues) - k - 1][1] > 0):
+			u += 1
+		if(pvalues[k][1] == 0):
+			l += 1
+		lmiss[k] = l
+		umiss[len(pvalues) - k - 1] = u
+	descr = 3. * lmiss + umiss
+
+	best_descr = descr[0]
+	best_cutoff = 0.
+	for k in range(len(pvalues)):
+		if(descr[k] > best_descr):
+			best_cutoff = pvalues[k][0]
+			best_descr = descr[k]
+
+	return best_cutoff
 
 
 '''
@@ -25,39 +59,7 @@ Shape storage class
 '''
 class Shape:
 
-	'''
-	Computes the best cutoff for the given indicator function
-	'''
-	def __best_cutoff(self, ift, pind):
-		pvalues = []
-		for x,v in ndenumerate(ift):
-			if(norm(array(x) - array(pind.shape) / 2.) <= self.radius):
-				pvalues.append( (v, pind[x[0], x[1]]) )
-		pvalues.sort()
 	
-		lmiss = zeros((len(pvalues)))
-		umiss = zeros((len(pvalues)))
-		
-		l = 0
-		u = 0
-		for k in range(len(pvalues)):
-			if(pvalues[len(pvalues) - k - 1][1] > 0):
-				u += 1
-			if(pvalues[k][1] == 0):
-				l += 1
-			lmiss[k] = l
-			umiss[len(pvalues) - k - 1] = u
-		descr = lmiss + umiss
-	
-		best_descr = descr[0]
-		best_cutoff = 0.
-		for k in range(len(pvalues)):
-			if(descr[k] > best_descr):
-				best_cutoff = pvalues[k][0]
-				best_descr = descr[k]
-	
-		return best_cutoff
-
 	'''
 	Initializes a shape object
 	'''
@@ -105,8 +107,14 @@ class Shape:
 
 		#Compute cutoff parameters
 		ift = real(ipfft(self.pft, pind.shape[0], pind.shape[1]))
-		self.cutoff = self.__best_cutoff(ift, pind)
-		self.int_res = sum((ift * to_ind(ift, self.cutoff)).flatten())
+		self.cutoff = best_cutoff(ift, pind, self.radius)
+		ind_ift = to_ind(ift, self.cutoff)
+		self.int_res = sum((ift * ind_ift).flatten())
+		self.ext_res = sum((ift * (1. - ind_ift)).flatten())
+		self.res_area = sum(ind_ift.flatten())
+		
+		imshow(pind)
+		imshow(to_ind(ift, self.cutoff))
 		
 		#Compute residual energy terms
 		self.energy = []
@@ -123,13 +131,16 @@ The shape/obstacle data base
 '''
 class ShapeSet:
 
+
 	'''
 	Initializes the shape database
 	'''
 	def __init__(self, R, SHAPE_R):
 		self.shape_list = []
+		self.cutoff_matrix = []
 		self.R = R
 		self.SHAPE_R = SHAPE_R
+		self.tarea = ((2. * self.SHAPE_R + 1)**2)
 
 	'''
 	Adds a shape to the obstacle set
@@ -141,6 +152,23 @@ class ShapeSet:
 		#Add to shape list
 		S.shape_num = len(self.shape_list)
 		self.shape_list.append(S)
+		
+		row = []
+		for k in range(len(self.shape_list)):
+			T = self.shape_list[k]
+			ift = real(ipfft(pft_mult(pft_rotate(S.pft, 2.*pi/6.), T.pft), 2*self.SHAPE_R+1,2*self.SHAPE_R+1))
+			Spad = imrotate(cpad(S.indicator, array([2*self.SHAPE_R+1,2*self.SHAPE_R+1])), 360./6.)
+			Tpad = cpad(T.indicator, array([2*self.SHAPE_R+1,2*self.SHAPE_R+1]))
+			pind = real(fftconvolve(Spad, Tpad, mode='same'))
+			imshow(pind)
+			imshow(ift)
+			obst = to_ind(pind, 0.001)
+			imshow(obst)
+			cutoff = best_cutoff(ift, obst, S.radius + T.radius)
+			print cutoff
+			imshow(to_ind(ift, cutoff))
+			row.append(cutoff * self.tarea)
+		self.cutoff_matrix.append(row)
 
 		return S
 
@@ -149,8 +177,13 @@ class ShapeSet:
 	Returns the cutoff threshold for shapes A,B
 	'''
 	def __get_cutoff(self, A, B):
-		C = (A.cutoff * B.int_res + B.cutoff * A.int_res) * ((self.SHAPE_R)**2)
-		print C
+		i = A.shape_num
+		j = B.shape_num
+		if(i < j):
+			t = i
+			i = j
+			j = t
+		C = self.cutoff_matrix[i][j]
 		return C
 		
 	'''
@@ -234,7 +267,7 @@ class ShapeSet:
 		phi = atan2(rel.x[1], rel.x[0])
 		
 		#Set up initial sums
-		s_0	 = real(fa[0][0] * fb[0][0] * pi)
+		s_0	 = real(fa[0][0] * fb[0][0])
 		s_x  = 0.
 		s_y  = 0.
 		s_ta = 0.
@@ -243,11 +276,11 @@ class ShapeSet:
 		for r in range(1, self.R):
 		
 			#Compute theta terms
-			rscale = 2. * pi / len(fa[r])
-			theta  = arange(len(fa[r])) * rscale
+			dtheta = 2. * pi / len(fa[r])
+			theta  = arange(len(fa[r])) * dtheta
 		
 			#Construct multiplier / v
-			mult = exp((m * r) * cos(theta + phi)) * r * rscale
+			mult = exp((m * r) * cos(theta + phi)) * r * dtheta
 			u 	 = pds.shift(conjugate(fb[r]), rel.theta) * mult
 			v 	 = fa[r] * u
 			
@@ -263,7 +296,6 @@ class ShapeSet:
 			s_ta += sum(real(da[r] * u))
 			s_tb += sum(real(pds.shift(conjugate(db[r]), rel.theta) * fa[r] * mult))
 		
-		print cutoff - s_0
 		if(s_0 <= cutoff):
 			return array([0., 0., 0., 0.])
 		return array([s_x, s_y, s_ta, s_tb, s_0])

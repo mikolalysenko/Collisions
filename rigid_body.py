@@ -62,7 +62,7 @@ class RigidBodySystem:
 				A.force  += delta[:2]
 				A.torque -= delta[2]
 				B.force  -= delta[:2]
-				B.torque -= delta[3]
+				B.torque += delta[3]
 			A.force += self.gravity * A.shape.mass
 		
 		#Apply forces and clear accumulators

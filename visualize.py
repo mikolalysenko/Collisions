@@ -23,7 +23,7 @@ class Visualization:
 	'''
 	def __init__(self, system):
 		self.system = system
-		self.screen = array([800,600])
+		self.screen = array([800,800])
 		
 		#Initialize pygame
 		pygame.init()
