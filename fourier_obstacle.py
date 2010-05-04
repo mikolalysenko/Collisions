@@ -3,27 +3,69 @@ Fourier obstacle for collision detection
 
 -Mikola
 '''
-from scipy import array, exp, pi, sin, cos, arange, conjugate, real, sqrt
+from scipy import array, exp, pi, sin, cos, arange, conjugate, real, sqrt, zeros
 from math import atan2
 from numpy import ndenumerate, dot
 from scipy.linalg import norm
+from scipy.misc import imshow
 
 import scipy.ndimage as ndi
 import scipy.fftpack.pseudo_diffs as pds
+
 
 from misc import to_ind, cpad
 from polar import pfft, ipfft
 from se2 import se2
 
+
+
+
 '''
 Shape storage class
 '''
 class Shape:
+
+	'''
+	Computes the best cutoff for the given indicator function
+	'''
+	def __best_cutoff(self, ift, pind):
+		pvalues = []
+		for x,v in ndenumerate(ift):
+			if(norm(array(x) - array(pind.shape) / 2.) <= self.radius):
+				pvalues.append( (v, pind[x[0], x[1]]) )
+		pvalues.sort()
+	
+		lmiss = zeros((len(pvalues)))
+		umiss = zeros((len(pvalues)))
+		
+		l = 0
+		u = 0
+		for k in range(len(pvalues)):
+			if(pvalues[len(pvalues) - k - 1][1] > 0):
+				u += 1
+			if(pvalues[k][1] == 0):
+				l += 1
+			lmiss[k] = l
+			umiss[len(pvalues) - k - 1] = u
+		descr = lmiss + umiss
+	
+		best_descr = descr[0]
+		best_cutoff = 0.
+		for k in range(len(pvalues)):
+			if(descr[k] > best_descr):
+				best_cutoff = pvalues[k][0]
+				best_descr = descr[k]
+	
+		return best_cutoff
+
 	'''
 	Initializes a shape object
 	'''
 	def __init__(self, mass_field, R, SHAPE_R):
 		
+		#Set basic parameters
+		self.R = R
+		self.SHAPE_R = SHAPE_R
 		self.mass_field = mass_field
 		self.mass = sum(mass_field.flatten())
 
@@ -57,38 +99,24 @@ class Shape:
 		#Compute polar fourier truncation of indicator
 		pind = cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1]))
 		self.pft  = pfft(pind, R)
+		ift = real(ipfft(self.pft, pind.shape[0], pind.shape[1]))
+		self.pft[0][0] -= min(ift.flatten()) * ((2. * SHAPE_R + 1) ** 2) #Enforce positivity
 		self.pdft = map(pds.diff, self.pft)
-		self.R = R
-		
-		#Compute cutoff threshold
-		ift = ipfft(self.pft, 2*SHAPE_R+1, 2*SHAPE_R+1)
-		self.int_res = 0.
-		self.ext_res = 0.
-		lbound = max(ift.flatten())
-		ubound = min(ift.flatten())
-		for x,v in ndenumerate(ift):
-			if(pind[x[0],x[1]] == 0):
-				self.ext_res += real(v)
-				ubound = max(ubound, v)
-			else:
-				self.int_res += real(v)
-				lbound = min(lbound, v)
-		self.int_res = self.int_res
-		self.ext_res = self.ext_res
-		self.cutoff = (lbound + ubound) * .5
-		print self.cutoff
-		print self.int_res
-		print self.area
+
+		#Compute cutoff parameters
+		ift = real(ipfft(self.pft, pind.shape[0], pind.shape[1]))
+		self.cutoff = self.__best_cutoff(ift, pind)
+		self.int_res = sum((ift * to_ind(ift, self.cutoff)).flatten())
 		
 		#Compute residual energy terms
 		self.energy = []
 		s = real(self.pft[0][0]) * pi
 		for r,l in enumerate(self.pft):
-			s += real(dot(self.pft[r], self.pft[r])) * ((r * 2. * pi / len(self.pft[r]))**2)
+			s += sum(abs(self.pft[r])) * (r * 2. * pi / len(self.pft[r]))
 			self.energy.append(s)
-		self.total_energy = sqrt(s)
+		self.total_energy = s
 		for r,e in enumerate(self.energy):
-			self.energy[r] = sqrt(s - self.energy[r])
+			self.energy[r] = s - self.energy[r]
 
 '''
 The shape/obstacle data base
@@ -121,9 +149,7 @@ class ShapeSet:
 	Returns the cutoff threshold for shapes A,B
 	'''
 	def __get_cutoff(self, A, B):
-		#C = min(A.cutoff * B.area, B.cutoff * A.area) * ((2. * self.SHAPE_R + 1)**2)
-		#C = (A.int_res * B.ext_res + A.ext_res * B.int_res) * ((2. * self.SHAPE_R + 1)**2)
-		C = (A.cutoff * B.int_res + A.int_res * B.cutoff) * ((2. * self.SHAPE_R + 1) ** 2)
+		C = (A.cutoff * B.int_res + B.cutoff * A.int_res) * ((self.SHAPE_R)**2)
 		print C
 		return C
 		
@@ -131,6 +157,7 @@ class ShapeSet:
 	Evaluates shape potential field
 	
 	Not actually useful for collision detection, but somewhat helpful for debugging purposes.
+	'''
 	'''
 	def potential(self, A, B, pa, pb, ra, rb):
 		#Compute relative transformation
@@ -166,13 +193,14 @@ class ShapeSet:
 			
 			#Check for early out
 			s_0  += sum(real(v))
-			if(s_0 + ea[r] * eb[r] <= cutoff):
+			if(s_0 + min(ea[r], eb[r]) <= cutoff):
 				return 0.
 		
 		if(s_0 <= cutoff):
 			return 0.
 		return s_0
-
+	'''
+	
 	'''
 	Gradient calculation for shape field
 	
@@ -225,9 +253,8 @@ class ShapeSet:
 			
 			#Check for early out
 			s_0  += sum(real(v))
-			#if(s_0 + ea[r] * eb[r] <= cutoff):
-				#print "early out", r, s_0, ea[r], eb[r], (s_0 + ea[r] * eb[r])
-				#return array([0.,0.,0.,0.])
+			if(s_0 + min(ea[r], eb[r]) <= cutoff):
+				return array([0.,0.,0.,0.])
 				
 			#Sum up gradient vectors
 			v     = real(1.j * v)

@@ -19,6 +19,8 @@ class Body:
 	force = array([0., 0.])
 	torque = 0.
 
+	color = array([1., 1., 1.])
+
 	shape = None
 
 
@@ -54,7 +56,7 @@ class RigidBodySystem:
 		for (i, A) in enumerate(self.bodies):
 			for j in range(i):
 				B = self.bodies[j]
-				delta = self.shape_db.grad(A.shape, B.shape, A.v_pos, B.v_pos, A.v_rot, B.v_rot) * 100.
+				delta = self.shape_db.grad(A.shape, B.shape, A.v_pos, B.v_pos, A.v_rot, B.v_rot) * 200.
 				if(abs(delta[0]) > 1):
 					print i, j, delta
 				A.force  += delta[:2]
