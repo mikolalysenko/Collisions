@@ -23,7 +23,7 @@ db.add_shape(load_img("shape4.png"))
 db.add_shape(load_img("shape5.png"))
 
 a = Body()
-a.pos = array([-50.,100.])
+a.pos = array([-50.,130.])
 a.rot = pi/2.
 a.shape = db.shape_list[2]
 a.lin_velocity = array([0., -40.])
@@ -31,8 +31,8 @@ a.ang_velocity = 0.0
 
 b = Body()
 b.pos = array([0.,0.])
-b.rot = 0.
-b.shape = db.shape_list[4]
+b.rot = pi/2.
+b.shape = db.shape_list[0]
 b.lin_velocity = array([0., 0.])
 b.ang_velocity = 0.
 

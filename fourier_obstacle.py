@@ -12,7 +12,7 @@ import scipy.ndimage as ndi
 import scipy.fftpack.pseudo_diffs as pds
 
 from misc import to_ind, cpad
-from polar import pfft
+from polar import pfft, ipfft
 from se2 import se2
 
 '''
@@ -60,15 +60,35 @@ class Shape:
 		self.pdft = map(pds.diff, self.pft)
 		self.R = R
 		
+		#Compute cutoff threshold
+		ift = ipfft(self.pft, 2*SHAPE_R+1, 2*SHAPE_R+1)
+		self.int_res = 0.
+		self.ext_res = 0.
+		lbound = max(ift.flatten())
+		ubound = min(ift.flatten())
+		for x,v in ndenumerate(ift):
+			if(pind[x[0],x[1]] == 0):
+				self.ext_res += real(v)
+				ubound = max(ubound, v)
+			else:
+				self.int_res += real(v)
+				lbound = min(lbound, v)
+		self.int_res = self.int_res
+		self.ext_res = self.ext_res
+		self.cutoff = (lbound + ubound) * .5
+		print self.cutoff
+		print self.int_res
+		print self.area
+		
 		#Compute residual energy terms
 		self.energy = []
 		s = real(self.pft[0][0]) * pi
 		for r,l in enumerate(self.pft):
-			s += sum(abs(real(self.pft[r]))) * r * 2. * pi / len(self.pft[r])
+			s += real(dot(self.pft[r], self.pft[r])) * ((r * 2. * pi / len(self.pft[r]))**2)
 			self.energy.append(s)
-		self.total_energy = s
+		self.total_energy = sqrt(s)
 		for r,e in enumerate(self.energy):
-			self.energy[r] = self.total_energy - self.energy[r]
+			self.energy[r] = sqrt(s - self.energy[r])
 
 '''
 The shape/obstacle data base
@@ -101,10 +121,16 @@ class ShapeSet:
 	Returns the cutoff threshold for shapes A,B
 	'''
 	def __get_cutoff(self, A, B):
-		return 0.02 * min(A.area, B.area) * ((2. * self.SHAPE_R + 1) ** 2)
+		#C = min(A.cutoff * B.area, B.cutoff * A.area) * ((2. * self.SHAPE_R + 1)**2)
+		#C = (A.int_res * B.ext_res + A.ext_res * B.int_res) * ((2. * self.SHAPE_R + 1)**2)
+		C = (A.cutoff * B.int_res + A.int_res * B.cutoff) * ((2. * self.SHAPE_R + 1) ** 2)
+		print C
+		return C
 		
 	'''
 	Evaluates shape potential field
+	
+	Not actually useful for collision detection, but somewhat helpful for debugging purposes.
 	'''
 	def potential(self, A, B, pa, pb, ra, rb):
 		#Compute relative transformation
@@ -140,7 +166,7 @@ class ShapeSet:
 			
 			#Check for early out
 			s_0  += sum(real(v))
-			if(s_0 + min(ea[r], eb[r]) <= cutoff):
+			if(s_0 + ea[r] * eb[r] <= cutoff):
 				return 0.
 		
 		if(s_0 <= cutoff):
@@ -199,17 +225,19 @@ class ShapeSet:
 			
 			#Check for early out
 			s_0  += sum(real(v))
-			if(s_0 + min(ea[r], eb[r]) <= cutoff):
-				return array([0.,0.,0.,0.])
+			#if(s_0 + ea[r] * eb[r] <= cutoff):
+				#print "early out", r, s_0, ea[r], eb[r], (s_0 + ea[r] * eb[r])
+				#return array([0.,0.,0.,0.])
 				
 			#Sum up gradient vectors
-			v    *= 1.j
-			s_x  -= sum(real( v * sin(theta + phi) ))
-			s_y  -= sum(real( v * cos(theta + phi) ))
+			v     = real(1.j * v)
+			s_x  -= sum(v * sin(theta + phi) )
+			s_y  -= sum(v * cos(theta + phi) )
 			s_ta += sum(real(da[r] * u))
 			s_tb += sum(real(pds.shift(conjugate(db[r]), rel.theta) * fa[r] * mult))
 		
+		print cutoff - s_0
 		if(s_0 <= cutoff):
 			return array([0., 0., 0., 0.])
-		return array([s_x, s_y, s_ta, s_tb])
+		return array([s_x, s_y, s_ta, s_tb, s_0])
 
