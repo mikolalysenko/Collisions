@@ -1,7 +1,7 @@
 '''
 SE2 
 '''
-from scipy import *
+from scipy import array, sin, cos
 
 '''
 An element of SE2

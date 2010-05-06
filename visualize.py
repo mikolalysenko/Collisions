@@ -1,23 +1,29 @@
-from scipy import *
-from numpy import *
-from ctypes import *
+'''
+A simple visualization template for rendering the results of the physics simulation
+
+-Mikola
+'''
+from scipy import array, zeros, dtype, arange, pi
 import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import obstacle
-import rigid_body
-import scipy.misc
 
+'''
+The visualization system
+'''
 class Visualization:
 	
 	system = None
 	textures = None
 	running = True
 
+	'''
+	Initializes the visualization
+	'''
 	def __init__(self, system):
 		self.system = system
-		self.screen = array([800,600])
+		self.screen = array([800,800])
 		
 		#Initialize pygame
 		pygame.init()
@@ -30,24 +36,30 @@ class Visualization:
 		glPixelStorei(GL_UNPACK_ALIGNMENT,1)
 		
 		#HACK: PyOpenGL is stupid, sometimes it returns an array other times it doesn't.  WTF?
-		if(system.shape_db.num_shapes() == 0):
+		shape_list = system.shape_db.shape_list
+		num_shapes = len(shape_list)
+		if(num_shapes == 0):
 			self.textures = []
-		elif(system.shape_db.num_shapes() == 1):
-			self.textures = [glGenTextures(system.shape_db.num_shapes())]
+		elif(num_shapes == 1):
+			self.textures = [glGenTextures(num_shapes)]
 		else:
-			self.textures = glGenTextures(system.shape_db.num_shapes())
+			self.textures = glGenTextures(num_shapes)
 		
 		#Cache all of the textures
-		for s in system.shape_db.get_shapes():
+		for s in shape_list:
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB, self.textures[s.shape_num])
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
 			
+			#Need to flatten array and threshold colors properly
 			s_flat = array(255. * s.indicator / max(s.indicator.flatten()), dtype('uint8'))
 			glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, GL_LUMINANCE, s_flat.shape[1], s_flat.shape[0], 0, GL_RED, GL_UNSIGNED_BYTE, s_flat.tostring('C'))
 			
+	'''
+	Handles user input events
+	'''
 	def do_events(self):
 		for event in pygame.event.get():
 			if event.type == QUIT:
@@ -55,6 +67,9 @@ class Visualization:
 			elif event.type == KEYDOWN and event.key == K_ESCAPE:
 				self.running = False
 	
+	'''
+	Draws the simulation
+	'''
 	def draw(self):
 		glClearColor(.23,.4,.8,0)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -90,21 +105,21 @@ class Visualization:
 			
 			glPushMatrix()
 			glTranslatef(b.pos[0], b.pos[1], 0.)
-			glRotatef(90. + b.rot * 180. / pi, 0, 0, 1.)
-			glScalef(.25, .25, 1.)
+			glRotatef(b.rot * 180. / pi, 0, 0, 1.)
+			glScalef(.5, .5, 1.)
 			
 			glBegin(GL_QUADS)
 			glTexCoord2f(0, 0)
-			glVertex2f( W, -H)
-			
-			glTexCoord2f(W, 0)
 			glVertex2f(-W, -H)
 			
+			glTexCoord2f(W, 0)
+			glVertex2f( W, -H)
+			
 			glTexCoord2f(W, H)
-			glVertex2f(-W, H)
+			glVertex2f( W, H)
 			
 			glTexCoord2f(0, H)
-			glVertex2f( W, H)
+			glVertex2f(-W, H)
 			glEnd()
 			
 			glPopMatrix()
@@ -113,6 +128,9 @@ class Visualization:
 		glDisable(GL_TEXTURE_RECTANGLE_ARB)
 		pygame.display.flip()
 
+	'''
+	Main update loop
+	'''
 	def loop(self):
 		while(self.running):
 			self.do_events()

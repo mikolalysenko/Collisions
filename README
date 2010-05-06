@@ -1,0 +1,11 @@
+Experimental Fourier based collision detection and rigid body dynamics
+
+This project is an application of some of the more concrete aspects of group 
+morphology.  In this code, the non-penetration constraint for two rigid bodies
+is modeled as a holonomic constraint on their configurations.  We generate such
+a constraint by convolving the indicator functions of their respective sets
+together.  Impulse response forces are computed by taking the gradient of this
+convolution map.
+
+
+Results of this research will appear in an upcoming paper.
