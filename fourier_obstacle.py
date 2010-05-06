@@ -100,13 +100,6 @@ class Shape:
 		
 		#Compute polar fourier truncation of indicator
 		pind = cpad(self.indicator, array([2*SHAPE_R+1,2*SHAPE_R+1]))
-<<<<<<< HEAD:fourier_obstacle.py
-		pft = pfft(pind, R)
-		for r in range(R):
-			pft[r] = fft(pft[r])
-		self.pft  = pft
-		self.R = R
-=======
 		self.pft  = pfft(pind, R)
 		ift = real(ipfft(self.pft, pind.shape[0], pind.shape[1]))
 		self.pft[0][0] -= min(ift.flatten()) * ((2. * SHAPE_R + 1) ** 2) #Enforce positivity
@@ -122,7 +115,6 @@ class Shape:
 		
 		imshow(pind)
 		imshow(to_ind(ift, self.cutoff))
->>>>>>> cdbf5ae8facd1085b90469288338e4e09d30e524:fourier_obstacle.py
 		
 		#Compute residual energy terms
 		self.energy = []
@@ -132,11 +124,7 @@ class Shape:
 			self.energy.append(s)
 		self.total_energy = s
 		for r,e in enumerate(self.energy):
-<<<<<<< HEAD:fourier_obstacle.py
-			self.energy[r] = self.total_energy - self.energy[r]
-=======
 			self.energy[r] = s - self.energy[r]
->>>>>>> cdbf5ae8facd1085b90469288338e4e09d30e524:fourier_obstacle.py
 
 '''
 The shape/obstacle data base
@@ -246,52 +234,6 @@ class ShapeSet:
 		return s_0
 	'''
 	
-<<<<<<< HEAD:fourier_obstacle.py
-	
-
-	'''
-	Gradient calculation for shape field
-	'''
-	def potential(self, s1, s2, pa, pb, ra, rb):
-		#Dereference shapes
-		A = self.shape_list[s1]
-		B = self.shape_list[s2]
-
-		#Compute relative transformation
-		ca = se2(pa, ra)
-		cb = se2(pb, rb)
-		rel = ca * cb.inv()
-		
-		#Load shape parameters
-		fa  = A.pft
-		fb  = B.pft
-		ea 	= A.energy
-		eb 	= B.energy
-		
-		#Compute coordinate coefficients
-		m   = 2.j * pi / (sqrt(2.) * SHAPE_R) * norm(rel.x)
-		phi = atan2(rel.x[0], rel.x[1])
-		
-		#Set up initial sums
-		s_0	= fa[0][0] * fb[0][0] * pi
-		
-		for r in range(1, self.R):
-		
-			#Compute theta terms
-			rscale = 2. * pi / len(fa[r])
-			theta  = arange(len(fa[r])) * rscale
-		
-			#Construct multiplier / v
-			v =  fa[r] * fb[r] * exp((m * r) * cos(theta - phi) + 1.j * theta * rel.theta) * r * rscale / len(fa[r])
-			
-			#Check for early out
-			s_0  += sum(real(v))
-		
-		return s_0
-
-
-=======
->>>>>>> cdbf5ae8facd1085b90469288338e4e09d30e524:fourier_obstacle.py
 	'''
 	Gradient calculation for shape field
 	
@@ -312,11 +254,8 @@ class ShapeSet:
 		#Load shape parameters
 		fa  = A.pft
 		fb  = B.pft
-<<<<<<< HEAD:fourier_obstacle.py
-=======
 		da  = A.pdft
 		db  = B.pdft
->>>>>>> cdbf5ae8facd1085b90469288338e4e09d30e524:fourier_obstacle.py
 		ea 	= A.energy
 		eb 	= B.energy
 		
@@ -341,20 +280,6 @@ class ShapeSet:
 			theta  = arange(len(fa[r])) * dtheta
 		
 			#Construct multiplier / v
-<<<<<<< HEAD:fourier_obstacle.py
-			v =  fa[r] * fb[r] * exp((m * r) * cos(theta - phi) + 2.j * theta * rel.theta) * r * rscale / len(fa[r])
-			
-			#Check for early out
-			s_0  += sum(real(v))
-			#if(s_0 + min(ea[r], eb[r]) <= cutoff):
-				#return array([0.,0.,0.])
-				
-			#Sum up gradient vectors
-			v    *= 1.j
-			s_x  += sum(real( v * cos(theta) ))
-			s_y  -= sum(real( v * sin(theta) ))
-			s_t	 += sum(real( v * theta ))
-=======
 			mult = exp((m * r) * cos(theta + phi)) * r * dtheta
 			u 	 = pds.shift(conjugate(fb[r]), rel.theta) * mult
 			v 	 = fa[r] * u
@@ -370,7 +295,6 @@ class ShapeSet:
 			s_y  -= sum(v * cos(theta + phi) )
 			s_ta += sum(real(da[r] * u))
 			s_tb += sum(real(pds.shift(conjugate(db[r]), rel.theta) * fa[r] * mult))
->>>>>>> cdbf5ae8facd1085b90469288338e4e09d30e524:fourier_obstacle.py
 		
 		if(s_0 <= cutoff):
 			return array([0., 0., 0., 0.])
