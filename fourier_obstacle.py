@@ -238,15 +238,11 @@ class ShapeSet:
 	Gradient calculation for shape field
 	
 	A,  B  - Shapes for the solids
-	pa, pb - Positions for shapes
-	ra, rb - Rotations for shapes
+	q      - Relative transformation
 	'''
-	def grad(self, A, B, pa, pb, ra, rb):
+	def grad(self, A, B, q):
 		#Compute relative transformation
-		ca = se2(pa, ra)
-		cb = se2(pb, rb)
-		rel = ca.inv() * cb
-		pr = norm(rel.x)
+		pr = norm(q.x)
 		
 		if(pr >= A.radius + B.radius ):
 			return array([0., 0., 0., 0.])
@@ -264,7 +260,7 @@ class ShapeSet:
 		
 		#Compute coordinate coefficients
 		m   = 2.j * pi / (2. * self.SHAPE_R + 1) * pr
-		phi = atan2(rel.x[1], rel.x[0])
+		phi = atan2(q.x[1], q.x[0])
 		
 		#Set up initial sums
 		s_0	 = real(fa[0][0] * fb[0][0])
@@ -281,7 +277,7 @@ class ShapeSet:
 		
 			#Construct multiplier / v
 			mult = exp((m * r) * cos(theta + phi)) * r * dtheta
-			u 	 = pds.shift(conjugate(fb[r]), rel.theta) * mult
+			u 	 = pds.shift(conjugate(fb[r]), q.theta) * mult
 			v 	 = fa[r] * u
 			
 			#Check for early out
@@ -293,8 +289,7 @@ class ShapeSet:
 			v     = real(1.j * v)
 			s_x  -= sum(v * sin(theta + phi) )
 			s_y  -= sum(v * cos(theta + phi) )
-			s_ta += sum(real(da[r] * u))
-			s_tb += sum(real(pds.shift(conjugate(db[r]), rel.theta) * fa[r] * mult))
+			s_t  += sum(real(da[r] * u))
 		
 		if(s_0 <= cutoff):
 			return array([0., 0., 0., 0.])

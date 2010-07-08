@@ -44,10 +44,10 @@ c.lin_velocity = array([-40., 0.])
 c.ang_velocity = 0.
 
 
-s = RigidBodySystem(db)
+s = RigidBodySystem(db, gravity=[0.,0.])
 s.add_body(b)
 s.add_body(a)
-s.add_body(c)
+#s.add_body(c)
 
 V = Visualization(s)
 V.loop()
